@@ -21,6 +21,7 @@ jobs:
       - run: npx prettier --check .
       - run: npm run knip
       - run: npm run depcheck
+      - run: npx playwright test
 
   publish:
     needs: check
