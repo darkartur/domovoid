@@ -1,0 +1,46 @@
+{
+  "name": "domovoid",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI Agent runtime for connecting claude (and other LLMs) to different channels and tools",
+  "license": "MIT",
+  "author": "Artur Udalov <artur.udalov@gmail.com>",
+  "homepage": "https://github.com/darkartur/domovoid#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darkartur/domovoid.git"
+  },
+  "bugs": {
+    "url": "https://github.com/darkartur/domovoid/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "start": "node ./packages/core/index.ts",
+    "tsc": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "fmt": "prettier --write .",
+    "knip": "knip",
+    "depcheck": "syncpack lint",
+    "depfix": "syncpack fix"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.3",
+    "@types/node": "^25.3.0",
+    "eslint": "^9.20.0",
+    "eslint-plugin-import-x": "^4.16.1",
+    "eslint-plugin-n": "^17.24.0",
+    "eslint-plugin-unicorn": "^63.0.0",
+    "knip": "^5.85.0",
+    "prettier": "^3.5.0",
+    "syncpack": "^14.0.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.24.0"
+  }
+}
