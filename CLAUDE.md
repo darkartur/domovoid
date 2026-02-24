@@ -22,9 +22,7 @@ We don't have any build step yet, but you already can use node to execute typesc
 node packages/<pkg>/index.ts
 ```
 
-All checks and tests listed above must pass before work is done — they run in CI too.
-
-
+All checks listed above must pass before work is done — they run in CI too. Tests are especially critical: `npm run test` runs Playwright E2E tests against the live server and must pass.
 
 **When checks fail, fix the root cause. Never:**
 
