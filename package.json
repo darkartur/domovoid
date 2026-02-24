@@ -28,7 +28,8 @@
     "fmt": "prettier --write .",
     "knip": "knip",
     "depcheck": "syncpack lint",
-    "depfix": "syncpack fix"
+    "depfix": "syncpack fix",
+    "test": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.3",
