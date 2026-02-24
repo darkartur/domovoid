@@ -27,10 +27,6 @@ export default defineConfig(
   },
   {
     files: ["packages/**/*.ts"],
-    // importXFlatConfigs.typescript is typed as PluginFlatConfig whose languageOptions
-    // is @typescript-eslint/utils FlatConfig.LanguageOptions — a concrete interface without
-    // an index signature. defineConfig expects @eslint/core LanguageOptions = Record<string, unknown>.
-    // The cast is safe: the runtime value has no languageOptions at all (only settings/rules/plugins).
     extends: [importXFlatConfigs.typescript as Linter.Config],
   },
 );
