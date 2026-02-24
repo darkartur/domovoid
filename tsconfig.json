@@ -25,5 +25,5 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
   },
-  "include": ["packages/**/*", "*.ts", "*.js"]
+  "include": ["packages/**/*", "tests/**/*", "*.ts", "*.js"]
 }

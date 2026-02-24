@@ -1,10 +1,9 @@
 import { defineConfig } from "eslint/config";
-import type { Linter } from "eslint";
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import unicorn from "eslint-plugin-unicorn";
 import n from "eslint-plugin-n";
-import { flatConfigs as importXFlatConfigs } from "eslint-plugin-import-x";
+import { createNodeResolver, flatConfigs as importXFlatConfigs } from "eslint-plugin-import-x";
 
 export default defineConfig(
   { ignores: ["**/node_modules/**"] },
@@ -27,6 +26,24 @@ export default defineConfig(
   },
   {
     files: ["packages/**/*.ts"],
-    extends: [importXFlatConfigs.typescript as Linter.Config],
+    settings: {
+      "import-x/extensions": [".ts", ".tsx", ".cts", ".mts", ".js", ".jsx", ".cjs", ".mjs"],
+      "import-x/external-module-folders": ["node_modules", "node_modules/@types"],
+      "import-x/parsers": { "@typescript-eslint/parser": [".ts", ".tsx", ".cts", ".mts"] },
+      "import-x/resolver-next": [
+        createNodeResolver({
+          extensionAlias: {
+            ".js": [".ts", ".js"],
+            ".jsx": [".tsx", ".jsx"],
+            ".mjs": [".mts", ".mjs"],
+            ".cjs": [".cts", ".cjs"],
+          },
+          tsconfig: { configFile: "tsconfig.json" },
+        }),
+      ],
+    },
+    rules: {
+      "import-x/named": "off",
+    },
   },
 );
