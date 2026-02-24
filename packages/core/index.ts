@@ -1,4 +1,4 @@
-import { startHealthCheckServer } from "./health.js";
+import { startHealthCheckServer } from "./health.ts";
 
 export const VERSION = "0.1.0";
 
