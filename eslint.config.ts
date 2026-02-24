@@ -32,12 +32,7 @@ export default defineConfig(
       "import-x/parsers": { "@typescript-eslint/parser": [".ts", ".tsx", ".cts", ".mts"] },
       "import-x/resolver-next": [
         createNodeResolver({
-          extensionAlias: {
-            ".js": [".ts", ".js"],
-            ".jsx": [".tsx", ".jsx"],
-            ".mjs": [".mts", ".mjs"],
-            ".cjs": [".cts", ".cjs"],
-          },
+          extensions: [".ts", ".tsx", ".mts", ".cts", ".mjs", ".cjs", ".js", ".json", ".node"],
           tsconfig: { configFile: "tsconfig.json" },
         }),
       ],
