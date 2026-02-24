@@ -24,6 +24,7 @@ node packages/<pkg>/index.ts
 All checks listed above must pass before work is done — they run in CI too.
 
 **When checks fail, fix the root cause. Never:**
+
 - Suppress tsc errors with `@ts-ignore`, `@ts-expect-error`, or `as any`
 - Disable ESLint rules with `eslint-disable` comments
 - Add entries to `knip.config.ts` `ignoreDependencies` to silence knip
