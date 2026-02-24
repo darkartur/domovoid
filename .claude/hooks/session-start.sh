@@ -14,12 +14,14 @@ npm install
 # Install GitHub CLI if not already present
 if ! command -v gh &>/dev/null; then
   echo "Installing GitHub CLI..."
-  GH_VERSION=$(curl -s https://api.github.com/repos/cli/cli/releases/latest \
-    | grep '"tag_name"' \
-    | sed 's/.*"v\([^"]*\)".*/\1/')
-  curl -L "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" \
-    | tar -xz -C /tmp
-  mv "/tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/gh
+  mkdir -p -m 755 /etc/apt/keyrings
+  wget -qO /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    https://cli.github.com/packages/githubcli-archive-keyring.gpg
+  chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+    > /etc/apt/sources.list.d/github-cli.list
+  apt-get update -qq
+  apt-get install -y -qq gh
   echo "GitHub CLI installed: $(gh --version)"
 else
   echo "GitHub CLI already available: $(gh --version)"
