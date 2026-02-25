@@ -22,6 +22,7 @@
   ],
   "scripts": {
     "start": "node ./packages/core/index.ts",
+    "start:telegram": "node ./packages/integration-telegram/index.ts",
     "tsc": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.3",
+    "grammy": "^1.40.0",
     "@playwright/test": "^1.58.2",
     "@types/node": "^25.3.0",
     "eslint": "^9.20.0",
