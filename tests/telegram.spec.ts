@@ -4,7 +4,12 @@ import { createBot } from "../packages/integration-telegram/bot.ts";
 
 test.describe.configure({ mode: "serial" });
 
-const REQUIRED_ENV = ["TELEGRAM_BOT_TOKEN", "TEST_BOT_TOKEN", "TEST_TELEGRAM_CHAT_ID"] as const;
+const REQUIRED_ENV = [
+  "TELEGRAM_BOT_TOKEN",
+  "ANTHROPIC_API_KEY",
+  "TEST_BOT_TOKEN",
+  "TEST_TELEGRAM_CHAT_ID",
+] as const;
 
 async function waitForBotReply(
   testBot: Bot,
@@ -60,16 +65,17 @@ test.describe("Telegram bot", () => {
     test.skip(missingEnvironment.length > 0, `Missing env vars: ${missingEnvironment.join(", ")}`);
 
     const telegramBotToken = process.env["TELEGRAM_BOT_TOKEN"];
+    const anthropicApiKey = process.env["ANTHROPIC_API_KEY"];
     const testBotToken = process.env["TEST_BOT_TOKEN"];
     const testChatId = process.env["TEST_TELEGRAM_CHAT_ID"];
-    if (!telegramBotToken || !testBotToken || !testChatId) {
+    if (!telegramBotToken || !anthropicApiKey || !testBotToken || !testChatId) {
       return;
     }
 
     mainBotId = Number(telegramBotToken.split(":").at(0));
     chatId = Number(testChatId);
 
-    mainBot = createBot(telegramBotToken);
+    mainBot = createBot(telegramBotToken, anthropicApiKey);
     void mainBot.start();
 
     testBot = new Bot(testBotToken);
@@ -114,7 +120,7 @@ test.describe("Telegram bot", () => {
     );
     updateOffset = newOffset;
 
-    expect(text).toMatch(/hello|work in progress/i);
+    expect(text).toMatch(/hello|claude|message/i);
   });
 
   test("replies to a text message with a Claude response", async () => {
@@ -130,6 +136,6 @@ test.describe("Telegram bot", () => {
     );
     updateOffset = newOffset;
 
-    expect(text).toBe("Work in progress.");
+    expect(text.length).toBeGreaterThan(0);
   });
 });
