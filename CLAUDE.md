@@ -22,7 +22,7 @@ We don't have any build step yet, but you already can use node to execute typesc
 node packages/<pkg>/index.ts
 ```
 
-All checks listed above must pass before work is done, after any work always make sure you run all of the checks and they pass.
+All checks and tests listed above must pass before work is done — they run in CI too.
 
 **When checks fail, fix the root cause. Never:**
 
