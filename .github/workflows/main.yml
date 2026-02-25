@@ -23,10 +23,8 @@ jobs:
       - run: npm run depcheck
       - run: npx playwright test
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          TEST_BOT_TOKEN: ${{ secrets.TEST_BOT_TOKEN }}
-          TEST_TELEGRAM_CHAT_ID: ${{ secrets.TEST_TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN_MAIN: ${{ secrets.TELEGRAM_BOT_TOKEN_MAIN }}
+          TELEGRAM_BOT_TOKEN_FRIEND: ${{ secrets.TELEGRAM_BOT_TOKEN_FRIEND }}
 
   publish:
     needs: check

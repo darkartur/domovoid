@@ -4,12 +4,9 @@ import { createBot } from "../packages/integration-telegram/bot.ts";
 
 test.describe.configure({ mode: "serial" });
 
-const REQUIRED_ENV = [
-  "TELEGRAM_BOT_TOKEN",
-  "ANTHROPIC_API_KEY",
-  "TEST_BOT_TOKEN",
-  "TEST_TELEGRAM_CHAT_ID",
-] as const;
+const CHAT_ID = -5_110_042_075;
+
+const REQUIRED_ENV = ["TELEGRAM_BOT_TOKEN_MAIN", "TELEGRAM_BOT_TOKEN_FRIEND"] as const;
 
 async function waitForBotReply(
   testBot: Bot,
@@ -57,28 +54,22 @@ test.describe("Telegram bot", () => {
   let mainBot!: Bot;
   let testBot!: Bot;
   let mainBotId!: number;
-  let chatId!: number;
   let updateOffset = 0;
 
   test.beforeAll(async () => {
     test.setTimeout(30_000);
     test.skip(missingEnvironment.length > 0, `Missing env vars: ${missingEnvironment.join(", ")}`);
 
-    const telegramBotToken = process.env["TELEGRAM_BOT_TOKEN"];
-    const anthropicApiKey = process.env["ANTHROPIC_API_KEY"];
-    const testBotToken = process.env["TEST_BOT_TOKEN"];
-    const testChatId = process.env["TEST_TELEGRAM_CHAT_ID"];
-    if (!telegramBotToken || !anthropicApiKey || !testBotToken || !testChatId) {
-      return;
-    }
+    const mainToken = process.env["TELEGRAM_BOT_TOKEN_MAIN"];
+    const friendToken = process.env["TELEGRAM_BOT_TOKEN_FRIEND"];
+    if (!mainToken || !friendToken) return;
 
-    mainBotId = Number(telegramBotToken.split(":").at(0));
-    chatId = Number(testChatId);
+    mainBotId = Number(mainToken.split(":").at(0));
 
-    mainBot = createBot(telegramBotToken, anthropicApiKey);
+    mainBot = createBot(mainToken);
     void mainBot.start();
 
-    testBot = new Bot(testBotToken);
+    testBot = new Bot(friendToken);
     await testBot.init();
 
     // Drain stale updates so we don't pick up messages from previous test runs
@@ -110,32 +101,32 @@ test.describe("Telegram bot", () => {
   test("replies to /start command", async () => {
     test.setTimeout(30_000);
 
-    await testBot.api.sendMessage(chatId, "/start");
+    await testBot.api.sendMessage(CHAT_ID, "/start");
     const { text, newOffset } = await waitForBotReply(
       testBot,
-      chatId,
+      CHAT_ID,
       mainBotId,
       updateOffset,
       20_000,
     );
     updateOffset = newOffset;
 
-    expect(text).toMatch(/hello|claude|message/i);
+    expect(text).toMatch(/hello|work in progress/i);
   });
 
-  test("replies to a text message with a Claude response", async () => {
-    test.setTimeout(90_000);
+  test("replies to a plain text message with 'Work in progress'", async () => {
+    test.setTimeout(30_000);
 
-    await testBot.api.sendMessage(chatId, "What is 2 + 2?");
+    await testBot.api.sendMessage(CHAT_ID, "What is 2 + 2?");
     const { text, newOffset } = await waitForBotReply(
       testBot,
-      chatId,
+      CHAT_ID,
       mainBotId,
       updateOffset,
-      60_000,
+      20_000,
     );
     updateOffset = newOffset;
 
-    expect(text.length).toBeGreaterThan(0);
+    expect(text).toBe("Work in progress.");
   });
 });

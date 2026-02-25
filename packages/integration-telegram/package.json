@@ -5,7 +5,6 @@
   "private": true,
   "description": "Telegram integration for domovoid",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.78.0",
     "grammy": "^1.40.0"
   }
 }
