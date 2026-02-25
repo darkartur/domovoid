@@ -22,17 +22,13 @@ We don't have any build step yet, but you already can use node to execute typesc
 node packages/<pkg>/index.ts
 ```
 
-All checks and tests listed above must pass before work is done — they run in CI too.
-
-
+All checks listed above must pass before work is done, after any work always make sure you run all of the checks and they pass.
 
 **When checks fail, fix the root cause. Never:**
 
 - Suppress tsc errors with `@ts-ignore`, `@ts-expect-error`, or `as any`
 - Disable ESLint rules with `eslint-disable` comments
 - Add entries to `knip.config.ts` `ignoreDependencies` to silence knip
-
-The only exception is a third-party type bug that cannot be fixed otherwise — in that case use `as CorrectType` (not `as any`) with a comment explaining the exact upstream issue and why the cast is safe at runtime.
 
 ## Architecture
 
@@ -41,11 +37,9 @@ npm workspaces monorepo. All packages live under `packages/`.
 **Packages:**
 
 - `@domovoid/core` — core AI agent runtime
-- `@domovoid/integration-telegram` — Telegram channel integration
+- `@domovoid/integration-telegram` — Telegram integration
 - `@domovoid/integration-github` — GitHub integration
-
-A single root `tsconfig.json` covers all packages (`include: ["packages/*/**/*"]`). Module system is ESM throughout (`"type": "module"` in every `package.json`, `"module": "NodeNext"`).
 
 ## Adding dependencies
 
-After `npm install`, re-run `knip` and `syncpack:check` to confirm clean state. Always use `^` ranges for devDependencies.
+After `npm install`, re-run `knip` and `syncpack:check` to confirm clean state.
