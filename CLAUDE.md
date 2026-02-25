@@ -30,6 +30,15 @@ All checks and tests listed above must pass before work is done — they run in 
 - Disable ESLint rules with `eslint-disable` comments
 - Add entries to `knip.config.ts` `ignoreDependencies` to silence knip
 
+The only exception is a third-party type bug that cannot be fixed otherwise — in that case use `as CorrectType` (not `as any`) with a comment explaining the exact upstream issue and why the cast is safe at runtime.
+
+## Writing tests
+
+- ALWAYS run tests after you write one. Never call tests "done" without running them.
+- Every time when you planning implementation of a new feature, think about way how are you going to test it.
+- Every time you fixing bug or issue think about how are you going to prove yourself that you actually fixed it.
+- If you are about to fix the bug, and you know a way how to test, always first write a test and MAKE SURE IT FAILS
+
 ## Architecture
 
 npm workspaces monorepo. All packages live under `packages/`.

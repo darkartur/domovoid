@@ -37,5 +37,8 @@ export default defineConfig(
   {
     files: ["tests/**"],
     extends: [playwright.configs["flat/recommended"]],
+    rules: {
+      "playwright/no-skipped-test": "error",
+    },
   },
 );

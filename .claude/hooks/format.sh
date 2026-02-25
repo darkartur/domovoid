@@ -27,7 +27,7 @@ fi
 
 # Run ESLint --fix on JS/TS files
 if [[ "$FILE_PATH" =~ \.(js|ts|tsx|jsx|mjs|cjs)$ ]]; then
-  npm exec -- eslint --fix "$FILE_PATH" || true
+  npm exec -- eslint --max-warnings 0 --fix "$FILE_PATH" || true
 fi
 
 exit 0
