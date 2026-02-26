@@ -1,42 +1,24 @@
 import { test, expect } from "@playwright/test";
-// telegram-test-api is a CJS package (module.exports = TelegramServer), but its d.ts uses
-// "export default" instead of "export =" — TypeScript NodeNext resolution sees the default
-// import as the module namespace (no construct signatures). The cast is safe: at runtime
-// module.exports IS the TelegramServer class with start/stop/config as typed below.
-import TelegramServerDefault from "telegram-test-api";
 import { createBot } from "../packages/integration-telegram/bot.ts";
-
-interface TelegramServerInstance {
-  start: () => Promise<void>;
-  stop: () => Promise<boolean>;
-  config: { apiURL: string };
-}
-
-const TelegramServer = TelegramServerDefault as unknown as new (config: {
-  port: number;
-  storage: string;
-  storeTimeout: number;
-}) => TelegramServerInstance;
 
 test.describe.configure({ mode: "serial" });
 
 const TOKEN = "123456:fake-token-for-testing";
 const CHAT_ID = -1001;
 
-let server: TelegramServerInstance;
 let mainBot: ReturnType<typeof createBot>;
 const replies: { chatId: number; text: string }[] = [];
 
 test.beforeAll(async () => {
-  server = new TelegramServer({ port: 9001, storage: "RAM", storeTimeout: 60 });
-  await server.start();
+  const apiURL = process.env["TELEGRAM_API_URL"];
+  if (!apiURL) throw new Error("TELEGRAM_API_URL not set — is globalSetup running?");
 
   mainBot = createBot(
     TOKEN,
     (chatId, text) => {
       replies.push({ chatId, text });
     },
-    server.config.apiURL,
+    apiURL,
   );
 
   // telegram-test-api's getMe response is missing is_bot:true — patch it so grammy's
@@ -50,10 +32,6 @@ test.beforeAll(async () => {
   });
 
   await mainBot.init();
-});
-
-test.afterAll(async () => {
-  await server.stop();
 });
 
 test("replies to /start command", async () => {
