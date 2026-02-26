@@ -27,6 +27,9 @@ jobs:
       - run: npm run depcheck
       - run: npx playwright test
 
+      - name: Check coverage thresholds
+        run: npm run coverage:check
+
       - name: Generate coverage report
         if: always()
         run: npm run coverage:report
