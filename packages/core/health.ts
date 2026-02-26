@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import v8 from "node:v8";
 
 export function startHealthCheckServer(port = 3000): void {
   const server = createServer((request, response) => {
@@ -13,5 +14,10 @@ export function startHealthCheckServer(port = 3000): void {
 
   server.listen(port, () => {
     console.log(`Health check server listening on port ${String(port)}`);
+  });
+
+  process.on("SIGTERM", () => {
+    v8.takeCoverage();
+    server.close();
   });
 }

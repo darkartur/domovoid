@@ -31,7 +31,7 @@
     "depfix": "syncpack fix",
     "test": "playwright test",
     "start:coverage": "NODE_V8_COVERAGE=coverage/tmp node ./packages/core/index.ts",
-    "coverage:report": "c8 report --reporter=html --reports-dir=coverage/html --temp-dir=coverage/tmp"
+    "coverage:report": "c8 report --reporter=html --reporter=text --reports-dir=./coverage/html --temp-directory=./coverage/tmp"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.3",
