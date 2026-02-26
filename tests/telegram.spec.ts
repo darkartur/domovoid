@@ -1,132 +1,92 @@
 import { test, expect } from "@playwright/test";
-import { Bot } from "grammy";
+// telegram-test-api is a CJS package (module.exports = TelegramServer), but its d.ts uses
+// "export default" instead of "export =" — TypeScript NodeNext resolution sees the default
+// import as the module namespace (no construct signatures). The cast is safe: at runtime
+// module.exports IS the TelegramServer class with start/stop/config as typed below.
+import TelegramServerDefault from "telegram-test-api";
 import { createBot } from "../packages/integration-telegram/bot.ts";
+
+interface TelegramServerInstance {
+  start: () => Promise<void>;
+  stop: () => Promise<boolean>;
+  config: { apiURL: string };
+}
+
+const TelegramServer = TelegramServerDefault as unknown as new (config: {
+  port: number;
+  storage: string;
+  storeTimeout: number;
+}) => TelegramServerInstance;
 
 test.describe.configure({ mode: "serial" });
 
-const CHAT_ID = -5_110_042_075;
+const TOKEN = "123456:fake-token-for-testing";
+const CHAT_ID = -1001;
 
-const REQUIRED_ENV = ["TELEGRAM_BOT_TOKEN_MAIN", "TELEGRAM_BOT_TOKEN_FRIEND"] as const;
+let server: TelegramServerInstance;
+let mainBot: ReturnType<typeof createBot>;
+const replies: { chatId: number; text: string }[] = [];
 
-async function waitForBotReply(
-  testBot: Bot,
-  chatId: number,
-  mainBotId: number,
-  offset: number,
-  timeoutMs: number,
-): Promise<{ text: string; newOffset: number }> {
-  const deadline = Date.now() + timeoutMs;
-  let currentOffset = offset;
+test.beforeAll(async () => {
+  server = new TelegramServer({ port: 9001, storage: "RAM", storeTimeout: 60 });
+  await server.start();
 
-  while (Date.now() < deadline) {
-    const remaining = Math.max(1, Math.floor((deadline - Date.now()) / 1000));
-    const updates = await testBot.api.getUpdates({
-      offset: currentOffset,
-      timeout: Math.min(10, remaining),
-      allowed_updates: ["message"],
-    });
+  mainBot = createBot(
+    TOKEN,
+    (chatId, text) => {
+      replies.push({ chatId, text });
+    },
+    server.config.apiURL,
+  );
 
-    for (const update of updates) {
-      currentOffset = update.update_id + 1;
-      const message = update.message;
-      if (
-        message?.chat.id === chatId &&
-        message.from.id === mainBotId &&
-        message.text !== undefined
-      ) {
-        return { text: message.text, newOffset: currentOffset };
-      }
+  // telegram-test-api's getMe response is missing is_bot:true — patch it so grammy's
+  // init doesn't reject the bot identity
+  mainBot.api.config.use(async (previous, method, payload, signal) => {
+    const result = await previous(method, payload, signal);
+    if (method === "getMe" && result.ok) {
+      (result.result as unknown as Record<string, unknown>)["is_bot"] = true;
     }
-
-    if (updates.length === 0) {
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 500);
-      });
-    }
-  }
-
-  throw new Error(`No reply from main bot within ${String(timeoutMs)}ms`);
-}
-
-test.describe("Telegram bot", () => {
-  const missingEnvironment = REQUIRED_ENV.filter((key) => !process.env[key]);
-
-  let mainBot!: Bot;
-  let testBot!: Bot;
-  let mainBotId!: number;
-  let updateOffset = 0;
-
-  test.beforeAll(async () => {
-    test.setTimeout(30_000);
-    test.skip(missingEnvironment.length > 0, `Missing env vars: ${missingEnvironment.join(", ")}`);
-
-    const mainToken = process.env["TELEGRAM_BOT_TOKEN_MAIN"];
-    const friendToken = process.env["TELEGRAM_BOT_TOKEN_FRIEND"];
-    if (!mainToken || !friendToken) return;
-
-    mainBotId = Number(mainToken.split(":").at(0));
-
-    mainBot = createBot(mainToken);
-    void mainBot.start();
-
-    testBot = new Bot(friendToken);
-    await testBot.init();
-
-    // Drain stale updates so we don't pick up messages from previous test runs
-    const stale = await testBot.api.getUpdates({
-      timeout: 0,
-      allowed_updates: ["message"],
-    });
-    for (const u of stale) {
-      const candidateOffset = u.update_id + 1;
-      if (candidateOffset > updateOffset) {
-        updateOffset = candidateOffset;
-      }
-    }
-    if (updateOffset > 0) {
-      await testBot.api.getUpdates({ offset: updateOffset, timeout: 0 });
-    }
-
-    // Give the main bot a moment to establish its long-poll connection
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 2000);
-    });
+    return result;
   });
 
-  test.afterAll(async () => {
-    if (missingEnvironment.length > 0) return;
-    await mainBot.stop();
-  });
+  await mainBot.init();
+});
 
-  test("replies to /start command", async () => {
-    test.setTimeout(30_000);
+test.afterAll(async () => {
+  await server.stop();
+});
 
-    await testBot.api.sendMessage(CHAT_ID, "/start");
-    const { text, newOffset } = await waitForBotReply(
-      testBot,
-      CHAT_ID,
-      mainBotId,
-      updateOffset,
-      20_000,
-    );
-    updateOffset = newOffset;
+test("replies to /start command", async () => {
+  await mainBot.handleUpdate({
+    update_id: 1,
+    message: {
+      message_id: 1,
+      date: Math.floor(Date.now() / 1000),
+      chat: { id: CHAT_ID, type: "group", title: "Test" },
+      from: { id: 42, is_bot: false, first_name: "Alice" },
+      text: "/start",
+      entities: [{ type: "bot_command", offset: 0, length: 6 }],
+    },
+  } as Parameters<typeof mainBot.handleUpdate>[0]);
 
-    expect(text).toMatch(/hello|work in progress/i);
-  });
+  const reply = replies.find((r) => r.chatId === CHAT_ID);
+  expect(reply?.text).toMatch(/hello|work in progress/i);
+  replies.length = 0;
+});
 
-  test("replies to a plain text message with 'Work in progress'", async () => {
-    test.setTimeout(30_000);
+test("replies to plain text with 'Work in progress'", async () => {
+  await mainBot.handleUpdate({
+    update_id: 2,
+    message: {
+      message_id: 2,
+      date: Math.floor(Date.now() / 1000),
+      chat: { id: CHAT_ID, type: "group", title: "Test" },
+      from: { id: 42, is_bot: false, first_name: "Alice" },
+      text: "What is 2 + 2?",
+    },
+  } as Parameters<typeof mainBot.handleUpdate>[0]);
 
-    await testBot.api.sendMessage(CHAT_ID, "What is 2 + 2?");
-    const { text, newOffset } = await waitForBotReply(
-      testBot,
-      CHAT_ID,
-      mainBotId,
-      updateOffset,
-      20_000,
-    );
-    updateOffset = newOffset;
-
-    expect(text).toBe("Work in progress.");
-  });
+  const reply = replies.find((r) => r.chatId === CHAT_ID);
+  expect(reply?.text).toBe("Work in progress.");
+  replies.length = 0;
 });
