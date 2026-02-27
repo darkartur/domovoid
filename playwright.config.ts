@@ -10,5 +10,6 @@ export default defineConfig({
     url: "http://localhost:3000/health",
     reuseExistingServer: !process.env["CI"],
     timeout: 30_000,
+    gracefulShutdown: { signal: "SIGTERM", timeout: 3000 },
   },
 });

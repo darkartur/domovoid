@@ -9,6 +9,7 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,6 +23,23 @@ jobs:
       - run: npm run knip
       - run: npm run depcheck
       - run: npx playwright test
+        env:
+          NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
+
+      - name: Check coverage thresholds
+        run: npm run coverage:check
+
+      - name: Generate coverage report
+        if: always()
+        run: npm run coverage:report
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/html/
+          retention-days: 30
 
   publish:
     needs: check

@@ -8,7 +8,7 @@ import { flatConfigs as importXFlatConfigs } from "eslint-plugin-import-x";
 import playwright from "eslint-plugin-playwright";
 
 export default defineConfig(
-  { ignores: ["**/node_modules/**"] },
+  { ignores: ["**/node_modules/**", "coverage/**"] },
   eslint.configs.recommended,
   unicorn.configs.recommended,
   n.configs["flat/recommended"],
