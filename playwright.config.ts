@@ -1,4 +1,7 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "@playwright/test";
+
+const mockNpmPath = fileURLToPath(new URL("tests/mock-npm.ts", import.meta.url));
 
 export default defineConfig({
   testDir: "./tests",
@@ -12,6 +15,10 @@ export default defineConfig({
       reuseExistingServer: !process.env["CI"],
       timeout: 30_000,
       gracefulShutdown: { signal: "SIGTERM", timeout: 3000 },
+      env: {
+        DOMOVOID_NPM_BIN: mockNpmPath,
+        DOMOVOID_NO_RESTART: "1",
+      },
     },
     {
       command: "node tests/mock-registry.ts",

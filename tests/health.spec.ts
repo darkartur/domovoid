@@ -48,3 +48,39 @@ test("check-update: returns 400 when registryUrl param is missing", async ({ req
   const response = await request.get("/check-update");
   expect(response.status()).toBe(400);
 });
+
+test("trigger-update: returns 400 when registryUrl param is missing", async ({ request }) => {
+  const response = await request.post("/trigger-update");
+  expect(response.status()).toBe(400);
+});
+
+test("trigger-update: no update when version matches", async ({ request }) => {
+  const response = await request.post("/trigger-update", {
+    params: { registryUrl: `${MOCK_REGISTRY}/no-update` },
+  });
+  expect(response.ok()).toBe(true);
+  expect(await response.json()).toMatchObject({
+    updateAvailable: false,
+    latest: "0.1.0",
+    current: "0.1.0",
+  });
+});
+
+test("trigger-update: installs update when newer version exists", async ({ request }) => {
+  const response = await request.post("/trigger-update", {
+    params: { registryUrl: `${MOCK_REGISTRY}/with-update` },
+  });
+  expect(response.ok()).toBe(true);
+  expect(await response.json()).toMatchObject({
+    updateAvailable: true,
+    latest: "0.2.0",
+    current: "0.1.0",
+  });
+});
+
+test("trigger-update: returns 500 when registry is unavailable", async ({ request }) => {
+  const response = await request.post("/trigger-update", {
+    params: { registryUrl: `${MOCK_REGISTRY}/error` },
+  });
+  expect(response.status()).toBe(500);
+});
