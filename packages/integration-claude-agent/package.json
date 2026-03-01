@@ -1,0 +1,20 @@
+{
+  "name": "@domovoid/integration-claude-agent",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Claude Code CLI agent integration for domovoid",
+  "engines": {
+    "node": ">=24.14.0"
+  },
+  "scripts": {
+    "vcr-proxy": "node test-utils/vcr-proxy.ts"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./plugin": "./plugin.ts"
+  },
+  "dependencies": {
+    "@domovoid/plugin-utils": "0.1.0"
+  }
+}
