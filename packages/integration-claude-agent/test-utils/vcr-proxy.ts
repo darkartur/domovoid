@@ -57,6 +57,11 @@ async function handleRequest(
 ): Promise<void> {
   console.log(`[REQUEST] ${originalRequest.method ?? ""} ${originalRequest.url ?? ""}`);
 
+  if (originalRequest.method === "GET" && originalRequest.url === "/health") {
+    originalResponse.writeHead(200).end("ok");
+    return;
+  }
+
   // Only handle Anthropic message endpoint
   if (originalRequest.url?.startsWith("/v1/messages") && originalRequest.method === "POST") {
     try {
