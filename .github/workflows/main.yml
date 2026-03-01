@@ -29,6 +29,9 @@ jobs:
       - run: pnpm run depcheck
 
       - run: pnpm exec playwright test
+        env:
+          ANTHROPIC_BASE_URL: http://localhost:8082
+          REPLAY_ONLY: true
 
       - name: Fix coverage file permissions
         run: sudo chmod -R a+rw tests/coverage/tmp 2>/dev/null || true
