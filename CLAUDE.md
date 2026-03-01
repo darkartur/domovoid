@@ -30,6 +30,20 @@ All checks listed above must pass before work is done, after any work always mak
 - Disable ESLint rules with `eslint-disable` comments
 - Add entries to `knip.config.ts` `ignoreDependencies` to silence knip
 
+## Testing strategy
+
+### End-to-end tests
+
+End-to-end tests are written with [Playwright](https://playwright.dev/) and located in `tests/` directory.
+They are criticial for any agentic work, this rules are important and should never be ignored:
+
+- Whenever you planning a new feature, first describe it in a form of e2e test
+- ALWAYS run test after you wrote one, test is not written until you run it
+- Test is not considered functional if you never seen it fail
+- Feature is not considered functional if you never saw test for it pass
+- When you plan changes to the feature, plan changes to the test first, than confirm that test fails, than implement the feature, than confirm that test passes
+- It always benefitial to do small iterations on test and the feature. Do changes in small steps, one small change in the test, confirm failure, follow with minimal implementation, confirming test result, than repeat.
+
 ## Architecture
 
 npm workspaces monorepo. All packages live under `packages/`.
