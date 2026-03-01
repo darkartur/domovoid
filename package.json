@@ -15,7 +15,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=22.16.0"
+    "node": ">=24.14.0"
   },
   "workspaces": [
     "packages/*"
