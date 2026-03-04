@@ -1,5 +1,3 @@
-export * from "../core/constants.ts";
-
 // Types
 export type * from "./types/agent.ts";
 export type * from "./types/all-capabilities.ts";
