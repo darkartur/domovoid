@@ -25,7 +25,8 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
-    "customConditions": ["development"]
+    "customConditions": ["development"],
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["packages/**/*", "tests/**/*", "*.ts", "*.js", "scripts/**/*.ts"]
 }
