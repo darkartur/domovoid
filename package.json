@@ -36,6 +36,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.3",
+    "@octokit/auth-app": "^7.1.5",
+    "@octokit/rest": "^21.1.1",
     "@playwright/test": "^1.58.2",
     "@types/node": "^25.3.0",
     "c8": "^10.1.3",

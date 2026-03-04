@@ -24,7 +24,9 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["packages/**/*", "tests/**/*", "*.ts", "*.js"]
 }
