@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 
 const PORT = Number(process.env["PORT"]) || 8082;
-const CACHE_DIR = path.join(process.cwd(), ".cache");
+const CACHE_DIR = process.env["CACHE_DIR"] ?? path.join(process.cwd(), ".cache");
 const REPLAY_ONLY = process.env["REPLAY_ONLY"] === "true";
 
 // Ensure cache directory exists
