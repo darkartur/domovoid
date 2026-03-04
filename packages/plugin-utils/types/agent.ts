@@ -1,3 +1,3 @@
 export interface AgentCapabilities {
-  run(arguments_: { prompt: string; workingDirectory: string }): Promise<string>;
+  run(options: { prompt: string; workingDirectory: string }): Promise<string>;
 }

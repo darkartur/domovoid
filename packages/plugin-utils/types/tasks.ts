@@ -1,5 +1,7 @@
+import type { PluginEvent } from "./events.ts";
+
 export interface TasksCapabilities {
-  getActiveTasks(): Promise<Task[]>;
+  getActiveTasks(projectId: string): Promise<Task[]>;
   getProjects(): Promise<TaskProject[]>;
 }
 
@@ -9,9 +11,10 @@ export interface TaskProject {
 }
 
 export interface Task {
-  id: unknown;
+  id: string;
   title: string;
   description: string;
   projectId: string;
-  repositoryUrl: string;
 }
+
+export type TasksEvent = PluginEvent<"tasks.newTask", Task>;
