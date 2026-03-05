@@ -12,8 +12,7 @@ export const DomovoidConfigSchema = z.object({
   projects: z.record(z.string(), ProjectConfigSchema),
 });
 
-export type DomovoidConfig = z.infer<typeof DomovoidConfigSchema>;
-export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
+type DomovoidConfig = z.infer<typeof DomovoidConfigSchema>;
 
 const CONFIG_PATH =
   process.env["DOMOVOID_CONFIG"] ?? path.resolve(DOMOVOID_DIR, "./domovoid-config.yml");
