@@ -18,7 +18,7 @@ export async function checkForUpdate(
   return { updateAvailable: latest !== currentVersion, latest, current: currentVersion };
 }
 
-export async function performUpdate(version: string): Promise<void> {
+async function performUpdate(version: string): Promise<void> {
   const mockBin = process.env["DOMOVOID_NPM_BIN"];
   await (mockBin === undefined
     ? execFileAsync("npm", ["install", "-g", `${PACKAGE_NAME}@${version}`])
