@@ -6,7 +6,7 @@ const execFileAsync = promisify(execFile);
 const PACKAGE_NAME = "@domovoid/core";
 const ENCODED_PACKAGE_NAME = PACKAGE_NAME.replace("/", "%2F");
 
-export async function checkForUpdate(
+async function checkForUpdate(
   currentVersion: string,
   registryUrl: string,
 ): Promise<{ updateAvailable: boolean; latest: string; current: string }> {
