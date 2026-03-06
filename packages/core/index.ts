@@ -19,4 +19,4 @@ if (registryUrl !== undefined) {
   });
 }
 
-startHealthCheckServer(VERSION);
+startHealthCheckServer();
