@@ -1,0 +1,18 @@
+storage: /tmp/domovoid-verdaccio-storage
+
+auth:
+  htpasswd:
+    file: /tmp/domovoid-verdaccio-htpasswd
+    max_users: 1000
+
+uplinks: {}
+
+packages:
+  "**":
+    access: $all
+    publish: $all
+
+log:
+  type: stdout
+  format: pretty
+  level: error

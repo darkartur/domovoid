@@ -1,0 +1,80 @@
+{
+	"name": "@domovoid/core",
+	"versions": {
+		"0.1.0": {
+			"name": "@domovoid/core",
+			"version": "0.1.0",
+			"type": "module",
+			"description": "Core AI agent runtime",
+			"engines": {
+				"node": ">=22.16.0"
+			},
+			"exports": "./index.ts",
+			"bin": {
+				"domovoid": "index.ts"
+			},
+			"_id": "@domovoid/core@0.1.0",
+			"_integrity": "sha512-KJAZLCAWr/pjf0W8jLlTaMgK4WAZSeZNxS2WnlqV3ljdTDotoHfAJJBKC+q22yvFO+IOqx4xTmmuAAixW6adWQ==",
+			"_resolved": "/tmp/domovoid-pack-bApLg4/domovoid-core-0.1.0.tgz",
+			"_from": "file:/tmp/domovoid-pack-bApLg4/domovoid-core-0.1.0.tgz",
+			"_nodeVersion": "22.22.0",
+			"_npmVersion": "10.9.4",
+			"dist": {
+				"integrity": "sha512-KJAZLCAWr/pjf0W8jLlTaMgK4WAZSeZNxS2WnlqV3ljdTDotoHfAJJBKC+q22yvFO+IOqx4xTmmuAAixW6adWQ==",
+				"shasum": "d64231291ad6c5d9fc2bb43013d7ca05532bc4b1",
+				"tarball": "http://localhost:4873/@domovoid/core/-/@domovoid/core-0.1.0.tgz"
+			},
+			"contributors": []
+		},
+		"0.2.0": {
+			"name": "@domovoid/core",
+			"version": "0.2.0",
+			"type": "module",
+			"description": "Core AI agent runtime",
+			"engines": {
+				"node": ">=22.16.0"
+			},
+			"exports": "./index.ts",
+			"bin": {
+				"domovoid": "index.ts"
+			},
+			"_id": "@domovoid/core@0.2.0",
+			"_integrity": "sha512-NGW6f0OmNglYyRSG9ENUFjrOcQQ1dNd4beEhN0/zcJMU51ztsjYyw3xDJZNMhjwz6nQ4ISnEX3N84zy9HKbIyg==",
+			"_resolved": "/tmp/domovoid-pack-Xnw5Kl/domovoid-core-0.2.0.tgz",
+			"_from": "file:/tmp/domovoid-pack-Xnw5Kl/domovoid-core-0.2.0.tgz",
+			"_nodeVersion": "22.22.0",
+			"_npmVersion": "10.9.4",
+			"dist": {
+				"integrity": "sha512-NGW6f0OmNglYyRSG9ENUFjrOcQQ1dNd4beEhN0/zcJMU51ztsjYyw3xDJZNMhjwz6nQ4ISnEX3N84zy9HKbIyg==",
+				"shasum": "8ff74d66fc1e12dbb20923248a164be69d87248d",
+				"tarball": "http://localhost:4873/@domovoid/core/-/@domovoid/core-0.2.0.tgz"
+			},
+			"contributors": []
+		}
+	},
+	"time": {
+		"modified": "2026-03-11T12:46:36.908Z",
+		"created": "2026-03-11T12:46:28.919Z",
+		"0.1.0": "2026-03-11T12:46:28.919Z",
+		"0.2.0": "2026-03-11T12:46:36.908Z"
+	},
+	"users": {},
+	"dist-tags": {
+		"latest": "0.2.0"
+	},
+	"_uplinks": {},
+	"_distfiles": {},
+	"_attachments": {
+		"core-0.1.0.tgz": {
+			"shasum": "d64231291ad6c5d9fc2bb43013d7ca05532bc4b1",
+			"version": "0.1.0"
+		},
+		"core-0.2.0.tgz": {
+			"shasum": "8ff74d66fc1e12dbb20923248a164be69d87248d",
+			"version": "0.2.0"
+		}
+	},
+	"_rev": "6-33f66f1c98d8d064",
+	"_id": "@domovoid/core",
+	"readme": "ERROR: No README data found!"
+}
