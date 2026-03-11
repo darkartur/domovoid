@@ -19,10 +19,12 @@ async function checkForUpdate(
 }
 
 async function performUpdate(version: string): Promise<void> {
-  const mockBin = process.env["DOMOVOID_NPM_BIN"];
-  await (mockBin === undefined
-    ? execFileAsync("npm", ["install", "-g", `${PACKAGE_NAME}@${version}`])
-    : execFileAsync("node", [mockBin, "install", "-g", `${PACKAGE_NAME}@${version}`]));
+  const arguments_ = ["install", "-g", `${PACKAGE_NAME}@${version}`];
+  const registry = process.env["DOMOVOID_NPM_REGISTRY"];
+  const prefix = process.env["DOMOVOID_NPM_PREFIX"];
+  if (registry) arguments_.push("--registry", registry);
+  if (prefix) arguments_.push("--prefix", prefix);
+  await execFileAsync("npm", arguments_);
 }
 
 export function startAutoUpdateLoop(
