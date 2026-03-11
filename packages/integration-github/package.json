@@ -3,5 +3,17 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "description": "GitHub integration for domovoid"
+  "description": "GitHub integration for domovoid",
+  "engines": {
+    "node": ">=24.14.0"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./plugin": "./plugin.ts"
+  },
+  "dependencies": {
+    "@domovoid/plugin-utils": "0.1.0",
+    "@octokit/auth-app": "^7.1.5",
+    "@octokit/rest": "^21.1.1"
+  }
 }

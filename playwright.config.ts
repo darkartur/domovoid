@@ -6,7 +6,7 @@ if (existsSync(".env")) {
   loadEnvFile(".env");
 }
 
-const ANTHROPIC_PROXY_URL = "http://localhost:8082";
+// const ANTHROPIC_PROXY_URL = "http://localhost:8082";
 
 export default defineConfig({
   testDir: "./tests",
@@ -15,12 +15,12 @@ export default defineConfig({
     baseURL: "http://localhost:3000",
   },
   webServer: [
-    {
-      command: "npm --workspace @domovoid/integration-claude-agent run vcr-proxy",
-      url: `${ANTHROPIC_PROXY_URL}/health`,
-      reuseExistingServer: !process.env["CI"],
-      timeout: 5000,
-    },
+    // {
+    //   command: "npm --workspace @domovoid/integration-claude-agent run vcr-proxy",
+    //   url: `${ANTHROPIC_PROXY_URL}/health`,
+    //   reuseExistingServer: !process.env["CI"],
+    //   timeout: 5000,
+    // },
     {
       command: "npm run start",
       url: "http://localhost:3000/health",
@@ -29,7 +29,7 @@ export default defineConfig({
       gracefulShutdown: { signal: "SIGTERM", timeout: 3000 },
       env: {
         DOMOVOID_DIR: "./.domovoid",
-        ANTHROPIC_BASE_URL: ANTHROPIC_PROXY_URL,
+        // ANTHROPIC_BASE_URL: ANTHROPIC_PROXY_URL,
         DOMOVOID_CONFIG: "./tests/domovoid-config.yml",
       },
     },
