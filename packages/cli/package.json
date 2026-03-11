@@ -1,0 +1,10 @@
+{
+  "name": "@domovoid/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "CLI for domovoid",
+  "engines": {
+    "node": ">=22.16.0"
+  }
+}
