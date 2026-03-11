@@ -2,7 +2,20 @@ import { test as base } from "@playwright/test";
 import { type ChildProcess, spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
-import path from "node:path";
+import nodePath from "node:path";
+
+// ── CLI fixture (for cli.spec.ts) ────────────────────────────────────────────
+
+export interface CliResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
+
+const CLI_ENTRY = nodePath.join(import.meta.dirname, "../packages/cli/index.ts");
+const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
+
+// ── App (daemon) fixture (for autoupdate.spec.ts) ────────────────────────────
 
 export interface AppFixture {
   url: string;
@@ -45,15 +58,44 @@ function killGroup(proc: ChildProcess): void {
   }
 }
 
-export const test = base.extend<AppOptions & { app: AppFixture }>({
+export const test = base.extend<
+  AppOptions & {
+    app: AppFixture;
+    cli: (arguments_: string[], environment?: Record<string, string>) => Promise<CliResult>;
+  }
+>({
   appEnv: [{}, { option: true }],
 
+  cli: async ({}, use) => {
+    await use(
+      (arguments_, environment = {}) =>
+        new Promise((resolve, reject) => {
+          const child = spawn("node", [CLI_ENTRY, ...arguments_], {
+            env: { ...process.env, NODE_V8_COVERAGE: COVERAGE_DIR, ...environment },
+            shell: false,
+          });
+          let stdout = "";
+          let stderr = "";
+          child.stdout.on("data", (chunk: Buffer) => {
+            stdout += chunk.toString();
+          });
+          child.stderr.on("data", (chunk: Buffer) => {
+            stderr += chunk.toString();
+          });
+          child.on("close", (code) => {
+            resolve({ stdout, stderr, exitCode: code ?? 1 });
+          });
+          child.on("error", reject);
+        }),
+    );
+  },
+
   app: async ({ appEnv }, use) => {
-    const prefixDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "domovoid-test-"));
+    const prefixDirectory = await fs.mkdtemp(nodePath.join(os.tmpdir(), "domovoid-test-"));
 
     // detached: true puts the child in its own process group so we can
     // kill it together with any grandchildren (e.g. npm install)
-    const proc = spawn("node", ["packages/core/index.ts"], {
+    const proc = spawn("node", ["packages/cli/index.ts"], {
       env: { ...process.env, DOMOVOID_NPM_PREFIX: prefixDirectory, ...appEnv },
       stdio: "inherit",
       detached: true,
