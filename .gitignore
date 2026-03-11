@@ -9,5 +9,3 @@ dist
 test-results/
 playwright-report/
 coverage/
-tests/.verdaccio-storage
-tests/.verdaccio-htpasswd

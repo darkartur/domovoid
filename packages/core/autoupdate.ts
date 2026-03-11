@@ -33,16 +33,19 @@ export function startAutoUpdateLoop(
   onUpdateInstalled: (() => void) | undefined,
   intervalMs = 3_600_000,
 ): NodeJS.Timeout {
+  let installing = false;
   return setInterval(() => {
+    if (installing) return;
     void checkForUpdate(currentVersion, registryUrl)
       .then(async (result) => {
-        if (result.updateAvailable) {
-          await performUpdate(result.latest);
-          onUpdateInstalled?.();
-        }
+        if (!result.updateAvailable) return;
+        installing = true;
+        await performUpdate(result.latest);
+        onUpdateInstalled?.();
       })
       .catch(() => {
-        // Transient registry error; will retry on next interval
+        // Transient error (registry or install); reset and retry on next interval
+        installing = false;
       });
   }, intervalMs);
 }
