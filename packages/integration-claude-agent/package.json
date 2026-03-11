@@ -1,9 +1,9 @@
 {
-  "name": "@domovoid/integration-github",
+  "name": "@domovoid/integration-claude-agent",
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "description": "GitHub integration for domovoid",
+  "description": "Claude Code CLI agent integration for domovoid",
   "engines": {
     "node": ">=24.14.0"
   },
@@ -12,8 +12,6 @@
     "./plugin": "./plugin.ts"
   },
   "dependencies": {
-    "@domovoid/plugin-utils": "0.1.0",
-    "@octokit/auth-app": "^7.1.5",
-    "@octokit/rest": "^21.1.1"
+    "@domovoid/plugin-utils": "0.1.0"
   }
 }

@@ -25,6 +25,8 @@ jobs:
       - run: npx playwright test
         env:
           NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
+          ANTHROPIC_BASE_URL: http://localhost:8082
+          REPLAY_ONLY: true
 
       - name: Check coverage thresholds
         run: npm run coverage:check

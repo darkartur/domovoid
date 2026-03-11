@@ -3,8 +3,8 @@
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "target": "ES2022",
-    "lib": ["ES2022"],
+    "target": "esnext",
+    "lib": ["ESNext"],
     "noEmit": true,
     "allowJs": true,
 
@@ -24,7 +24,9 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["packages/**/*", "tests/**/*", "*.ts", "*.js"]
 }

@@ -38,4 +38,19 @@ export default defineConfig(
     files: ["tests/**"],
     extends: [playwright.configs["flat/recommended"]],
   },
+  {
+    files: ["**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/no-floating-promises": [
+        "error",
+        {
+          allowForKnownSafeCalls: [
+            { from: "package", name: "test", package: "node:test" },
+            { from: "package", name: "it", package: "node:test" },
+            { from: "package", name: "describe", package: "node:test" },
+          ],
+        },
+      ],
+    },
+  },
 );
