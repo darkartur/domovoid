@@ -29,7 +29,7 @@ export default defineConfig({
       gracefulShutdown: { signal: "SIGTERM", timeout: 3000 },
       env: {
         DOMOVOID_DIR: "./.domovoid",
-        // ANTHROPIC_BASE_URL: ANTHROPIC_PROXY_URL,
+        ANTHROPIC_BASE_URL: ANTHROPIC_PROXY_URL,
         DOMOVOID_CONFIG: "./tests/domovoid-config.yml",
       },
     },
