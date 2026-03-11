@@ -7,9 +7,6 @@
   "engines": {
     "node": ">=24.14.0"
   },
-  "scripts": {
-    "vcr-proxy": "node test-utils/vcr-proxy.ts"
-  },
   "exports": {
     ".": "./index.ts",
     "./plugin": "./plugin.ts"
