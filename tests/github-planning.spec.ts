@@ -1,4 +1,10 @@
+import { ProxyAgent, setGlobalDispatcher } from "undici";
 import { test, expect } from "@playwright/test";
+
+const proxy = process.env["HTTPS_PROXY"] ?? process.env["HTTP_PROXY"];
+if (proxy) {
+  setGlobalDispatcher(new ProxyAgent(proxy));
+}
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { readFile } from "node:fs/promises";
@@ -21,7 +27,7 @@ test.beforeAll(() => {
     authStrategy: createAppAuth,
     auth: {
       appId: process.env["GITHUB_APP_ID"],
-      privateKey: process.env["GITHUB_APP_PRIVATE_KEY"],
+      privateKey: process.env["GITHUB_APP_PRIVATE_KEY"]?.replaceAll(String.raw`\n`, "\n"),
       installationId: Number(process.env["GITHUB_APP_INSTALLATION_ID"]),
     },
   });

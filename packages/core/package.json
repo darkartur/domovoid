@@ -14,6 +14,7 @@
     "@domovoid/integration-claude-agent": "0.1.0",
     "@domovoid/integration-github": "0.1.0",
     "@domovoid/plugin-utils": "0.1.0",
+    "undici": "^7.22.0",
     "yaml": "^2.8.2",
     "zod": "^4.3.6"
   }

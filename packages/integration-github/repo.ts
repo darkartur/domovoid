@@ -22,17 +22,22 @@ function parseOwnerRepo(repositoryUrl: string): { owner: string; name: string } 
 export async function ensureBaseClone(
   repositoryUrl: string,
   dataDirectory: string,
+  token?: string,
 ): Promise<string> {
   const { owner, name } = parseOwnerRepo(repositoryUrl);
   const baseDirectory = path.join(dataDirectory, owner, name);
-  const token = process.env["GITHUB_TOKEN"] ?? "";
-  const cloneUrl = `https://${token ? `${token}@` : ""}github.com/${owner}/${name}.git`;
+  const resolvedToken = token ?? process.env["GITHUB_TOKEN"] ?? "";
+  const cloneUrl = `https://${resolvedToken ? `x-access-token:${resolvedToken}@` : ""}github.com/${owner}/${name}.git`;
 
   if (existsSync(path.join(baseDirectory, ".git"))) {
-    await execFileAsync("git", ["-C", baseDirectory, "fetch", "--depth=1", "origin"]);
+    await execFileAsync("git", ["-C", baseDirectory, "fetch", "--depth=1", "origin"], {
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
   } else {
     await mkdir(path.join(dataDirectory, owner), { recursive: true });
-    await execFileAsync("git", ["clone", "--depth=1", cloneUrl, baseDirectory]);
+    await execFileAsync("git", ["clone", "--depth=1", cloneUrl, baseDirectory], {
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
   }
   return baseDirectory;
 }

@@ -1,4 +1,26 @@
 import { spawn } from "node:child_process";
+import { readSync } from "node:fs";
+
+function readTokenFromFd(fd: number): string | undefined {
+  try {
+    const chunks: Buffer[] = [];
+    const buf = Buffer.alloc(4096);
+    let bytesRead: number;
+    do {
+      bytesRead = readSync(fd, buf);
+      if (bytesRead > 0) chunks.push(buf.subarray(0, bytesRead));
+    } while (bytesRead > 0);
+    return chunks.length > 0 ? Buffer.concat(chunks).toString("utf8").trim() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const tokenFdEnvironment = process.env["CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR"];
+const cachedToken: string | undefined =
+  tokenFdEnvironment && !process.env["CLAUDE_CODE_OAUTH_TOKEN"]
+    ? readTokenFromFd(Number(tokenFdEnvironment))
+    : undefined;
 
 interface ClaudeResult {
   text: string;
@@ -18,8 +40,10 @@ export async function runClaude(options: ClaudeRunOptions): Promise<ClaudeResult
 
   const environment: NodeJS.ProcessEnv = { ...process.env };
   delete environment["CLAUDECODE"]; // allow spawning claude from within a claude session
-  if (token) {
-    environment["CLAUDE_CODE_OAUTH_TOKEN"] = token;
+  delete environment["CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR"]; // token is resolved below
+  const resolvedToken = token ?? cachedToken ?? process.env["CLAUDE_CODE_OAUTH_TOKEN"];
+  if (resolvedToken) {
+    environment["CLAUDE_CODE_OAUTH_TOKEN"] = resolvedToken;
   }
 
   return new Promise((resolve, reject) => {
@@ -48,8 +72,10 @@ export async function runClaude(options: ClaudeRunOptions): Promise<ClaudeResult
     child.on("close", (code: number | null) => {
       if (code !== 0) {
         const stderr = Buffer.concat(stderrChunks).toString();
+        const stdout = Buffer.concat(stdoutChunks).toString();
+        const detail = [stderr, stdout].filter(Boolean).join("\n");
         reject(
-          new Error(`Claude CLI exited with code ${String(code)}${stderr ? `\n${stderr}` : ""}`),
+          new Error(`Claude CLI exited with code ${String(code)}${detail ? `\n${detail}` : ""}`),
         );
         return;
       }

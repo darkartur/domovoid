@@ -1,4 +1,10 @@
+import { ProxyAgent, setGlobalDispatcher } from "undici";
 import path from "node:path";
+
+const proxy = process.env["HTTPS_PROXY"] ?? process.env["HTTP_PROXY"];
+if (proxy) {
+  setGlobalDispatcher(new ProxyAgent(proxy));
+}
 import { loadConfig } from "./config.ts";
 import { startHealthCheckServer } from "./health.ts";
 import { DOMOVOID_DIR } from "./constants.ts";
@@ -102,8 +108,13 @@ taskHandlerHolder.onNewTask = async (task: Task): Promise<void> => {
     const prompt = buildPrompt(task);
     const result = await agent.run({ prompt, workingDirectory: worktreePath });
     await tasks.postComment(task.id, result);
+  } catch (error) {
+    console.error("Task failed:", error);
+    throw error;
   } finally {
-    await vcs.remove(worktreePath);
+    await vcs.remove(worktreePath).catch((removeError: unknown) => {
+      console.error("Cleanup failed:", removeError);
+    });
   }
 };
 
