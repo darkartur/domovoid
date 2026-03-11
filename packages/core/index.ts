@@ -13,10 +13,12 @@ const restart =
 
 const registryUrl = process.env["REGISTRY_URL"];
 if (registryUrl !== undefined) {
-  const timer = startAutoUpdateLoop(VERSION, registryUrl, restart);
+  const intervalMs = Number(process.env["DOMOVOID_UPDATE_INTERVAL_MS"]) || 3_600_000;
+  const timer = startAutoUpdateLoop(VERSION, registryUrl, restart, intervalMs);
   process.on("SIGTERM", () => {
     clearInterval(timer);
   });
 }
 
-startHealthCheckServer();
+const port = Number(process.env["PORT"]) || 3000;
+startHealthCheckServer({ port });
