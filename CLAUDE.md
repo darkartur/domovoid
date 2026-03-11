@@ -13,7 +13,8 @@ npm run fmt            # prettier write, run after each change; you can also use
 npm run knip           # unused exports / unlisted / unused deps. Run after all changes are done as a final check
 npm run depcheck       # version consistency across workspaces
 npm run depfix         # auto-fix version mismatches, use it if spotted problems
-npm run test           # Playwright E2E tests — MUST pass before work is done
+npm run test           # Running unit tests - Using builtin node:test framework
+npm run test:e2e       # Playwright E2E tests — MUST pass before work is done
 ```
 
 We don't have any build step yet, but you already can use node to execute typescript directly:

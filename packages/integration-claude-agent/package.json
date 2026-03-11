@@ -8,7 +8,8 @@
     "node": ">=24.14.0"
   },
   "scripts": {
-    "vcr-proxy": "node test-utils/vcr-proxy.ts"
+    "vcr-proxy": "node test-utils/vcr-proxy.ts",
+    "test:unit": "node --test test-utils/vcr-normalize.test.ts"
   },
   "exports": {
     ".": "./index.ts",
@@ -16,5 +17,8 @@
   },
   "dependencies": {
     "@domovoid/plugin-utils": "0.1.0"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.78.0"
   }
 }

@@ -2,27 +2,15 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { calculateCacheKey } from "./vcr-normalize.ts";
+import vcrExtractResponse from "./vcr-extract-response.ts";
 
 const PORT = Number(process.env["PORT"]) || 8082;
 const CACHE_DIR = process.env["CACHE_DIR"] ?? path.join(process.cwd(), ".cache");
 const REPLAY_ONLY = process.env["REPLAY_ONLY"] === "true";
 
 // Ensure cache directory exists
-if (!existsSync(CACHE_DIR)) {
-  await mkdir(CACHE_DIR, { recursive: true });
-}
-
-async function calculateCacheKey(requestBody: unknown): Promise<string> {
-  if (typeof requestBody !== "object" || requestBody === null) {
-    throw new Error("Body must be an object");
-  }
-
-  const sortedBody = JSON.stringify(requestBody, Object.keys(requestBody).toSorted());
-  const messageUint8 = new TextEncoder().encode(sortedBody);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", messageUint8);
-  const hashArray = [...new Uint8Array(hashBuffer)];
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
+await mkdir(CACHE_DIR, { recursive: true });
 
 async function readJson(request: IncomingMessage): Promise<unknown> {
   const buffers = [];
@@ -74,7 +62,7 @@ async function handleRequest(
         console.log(`[HIT] ${hash.slice(0, 8)}`);
         const cached = JSON.parse(await readFile(cachePath, "utf8")) as CacheRecord;
         originalResponse.writeHead(200, { "Content-Type": "application/json" });
-        originalResponse.end(JSON.stringify(cached.response));
+        originalResponse.end(JSON.stringify(vcrExtractResponse(cached, requestBody)));
         return;
       }
 
