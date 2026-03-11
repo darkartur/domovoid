@@ -2,8 +2,17 @@
   "name": "@domovoid/cli",
   "version": "0.1.0",
   "type": "module",
-  "private": true,
   "description": "CLI for domovoid",
+  "bin": {
+    "domovoid": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node --input-type=module -e \"import {readFileSync,writeFileSync} from 'node:fs'; const f='dist/index.js'; writeFileSync(f,'#!/usr/bin/env node\\n'+readFileSync(f,'utf8'));\" && chmod +x dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@domovoid/core": "0.1.0"
+  },
   "engines": {
     "node": ">=22.16.0"
   }

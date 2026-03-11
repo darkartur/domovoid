@@ -8,7 +8,12 @@ export interface CliResult {
   exitCode: number;
 }
 
-const CLI_ENTRY = nodePath.join(import.meta.dirname, "../packages/cli/index.ts");
+const USE_BUILT_CLI = Boolean(process.env["USE_BUILT_CLI"]);
+
+const CLI_ENTRY = USE_BUILT_CLI
+  ? nodePath.join(import.meta.dirname, "../packages/cli/dist/index.js")
+  : nodePath.join(import.meta.dirname, "../packages/cli/index.ts");
+
 const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
 
 export const test = base.extend<{
@@ -18,10 +23,19 @@ export const test = base.extend<{
     await use(
       (arguments_, environment = {}) =>
         new Promise((resolve, reject) => {
-          const child = spawn("node", [CLI_ENTRY, ...arguments_], {
-            env: { ...process.env, NODE_V8_COVERAGE: COVERAGE_DIR, ...environment },
-            shell: false,
-          });
+          const child = USE_BUILT_CLI
+            ? spawn(CLI_ENTRY, arguments_, {
+                env: { ...process.env, ...environment },
+                shell: false,
+              })
+            : spawn("node", [CLI_ENTRY, ...arguments_], {
+                env: {
+                  ...process.env,
+                  NODE_V8_COVERAGE: COVERAGE_DIR,
+                  ...environment,
+                },
+                shell: false,
+              });
           let stdout = "";
           let stderr = "";
           child.stdout.on("data", (chunk: Buffer) => {

@@ -2,6 +2,18 @@
   "name": "@domovoid/core",
   "version": "0.1.0",
   "type": "module",
-  "private": true,
-  "description": "Core AI agent runtime"
+  "description": "Core AI agent runtime",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "tsc -p tsconfig.build.json"
+  },
+  "engines": {
+    "node": ">=22.16.0"
+  }
 }

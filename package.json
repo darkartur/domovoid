@@ -22,6 +22,8 @@
   ],
   "scripts": {
     "start": "node ./packages/cli/index.ts",
+    "build": "npm run build -w packages/core -w packages/cli",
+    "test:built": "npm run build && USE_BUILT_CLI=1 playwright test",
     "tsc": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
