@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 import { loadEnvFile } from "node:process";
 import { existsSync, readSync } from "node:fs";
+import path from "node:path";
 
 if (existsSync(".env")) {
   loadEnvFile(".env");
@@ -26,6 +27,9 @@ const claudeToken =
   process.env["CLAUDE_CODE_OAUTH_TOKEN"] ??
   (tokenFdEnvironment ? readTokenFromFd(Number(tokenFdEnvironment)) : undefined);
 
+const DOMOVOID_DIR = path.resolve("./.domovoid");
+process.env["DOMOVOID_DIR"] = DOMOVOID_DIR;
+
 export default defineConfig({
   testDir: "./tests",
   timeout: 120_000,
@@ -40,7 +44,7 @@ export default defineConfig({
       timeout: 5000,
       gracefulShutdown: { signal: "SIGTERM", timeout: 3000 },
       env: {
-        DOMOVOID_DIR: "./.domovoid",
+        DOMOVOID_DIR,
         DOMOVOID_CONFIG: "./tests/domovoid-config.yml",
         ...(claudeToken ? { CLAUDE_CODE_OAUTH_TOKEN: claudeToken } : {}),
       },

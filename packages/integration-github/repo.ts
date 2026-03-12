@@ -30,6 +30,9 @@ export async function ensureBaseClone(
   const cloneUrl = `https://${resolvedToken ? `x-access-token:${resolvedToken}@` : ""}github.com/${owner}/${name}.git`;
 
   if (existsSync(path.join(baseDirectory, ".git"))) {
+    await execFileAsync("git", ["-C", baseDirectory, "remote", "set-url", "origin", cloneUrl], {
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
     await execFileAsync("git", ["-C", baseDirectory, "fetch", "--depth=1", "origin"], {
       env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
     });
