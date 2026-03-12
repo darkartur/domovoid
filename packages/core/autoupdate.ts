@@ -4,18 +4,16 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 const PACKAGE_NAME = "@domovoid/core";
-const ENCODED_PACKAGE_NAME = PACKAGE_NAME.replace("/", "%2F");
 
-async function checkForUpdate(
-  currentVersion: string,
-  registryUrl: string,
-): Promise<{ updateAvailable: boolean; latest: string; current: string }> {
-  const response = await fetch(`${registryUrl}/${ENCODED_PACKAGE_NAME}/latest`);
-  if (!response.ok) {
-    throw new Error(`Registry returned ${String(response.status)}`);
-  }
-  const { version: latest } = (await response.json()) as { version: string };
-  return { updateAvailable: latest !== currentVersion, latest, current: currentVersion };
+async function getLatestVersion(registryUrl: string): Promise<string> {
+  const { stdout } = await execFileAsync("npm", [
+    "view",
+    PACKAGE_NAME,
+    "version",
+    "--registry",
+    registryUrl,
+  ]);
+  return stdout.trim();
 }
 
 async function performUpdate(version: string): Promise<void> {
@@ -36,15 +34,15 @@ export function startAutoUpdateLoop(
   let installing = false;
   return setInterval(() => {
     if (installing) return;
-    void checkForUpdate(currentVersion, registryUrl)
-      .then(async (result) => {
-        if (!result.updateAvailable) return;
+    void getLatestVersion(registryUrl)
+      .then(async (latest) => {
+        if (latest === currentVersion) return;
         installing = true;
-        await performUpdate(result.latest);
+        await performUpdate(latest);
         onUpdateInstalled?.();
       })
       .catch(() => {
-        // Transient error (registry or install); reset and retry on next interval
+        // Transient error (registry or install); retry on next interval
         installing = false;
       });
   }, intervalMs);

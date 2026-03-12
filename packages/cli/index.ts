@@ -1,7 +1,7 @@
 import { parseArgs } from "node:util";
+import v8 from "node:v8";
 import { VERSION } from "../core/index.ts";
 import { startAutoUpdateLoop } from "../core/autoupdate.ts";
-import { startHealthCheckServer } from "../core/health.ts";
 
 function main(): void {
   try {
@@ -37,12 +37,12 @@ function main(): void {
       const intervalMs = Number(process.env["DOMOVOID_UPDATE_INTERVAL_MS"]) || 3_600_000;
       const timer = startAutoUpdateLoop(VERSION, registryUrl, restart, intervalMs);
       process.on("SIGTERM", () => {
+        v8.takeCoverage();
         clearInterval(timer);
       });
     }
 
-    const port = Number(process.env["PORT"]) || 3000;
-    startHealthCheckServer({ port });
+    process.stdout.write("started\n");
   } catch (error) {
     process.stderr.write(`Error: ${String(error)}\n`);
     process.exitCode = 1;
