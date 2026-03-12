@@ -18,7 +18,6 @@ const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
 // ── App (daemon) fixture (for autoupdate.spec.ts) ────────────────────────────
 
 export interface AppFixture {
-  url: string;
   /** Unique tmp dir auto-created and passed as DOMOVOID_NPM_PREFIX */
   prefixDirectory: string;
   /** Resolves with the exit code when the process exits */
@@ -30,23 +29,34 @@ interface AppOptions {
   appEnv: NodeJS.ProcessEnv;
 }
 
-async function waitForHealth(url: string, proc: ChildProcess, timeoutMs = 10_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (proc.exitCode !== null) {
-      throw new Error(
-        `App process exited with code ${String(proc.exitCode)} before becoming healthy`,
-      );
-    }
-    try {
-      const response = await fetch(`${url}/health`);
-      if (response.ok) return;
-    } catch {
-      // not ready yet
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  throw new Error(`App at ${url} did not become healthy within ${String(timeoutMs)}ms`);
+async function waitForStarted(proc: ChildProcess, timeoutMs = 10_000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let resolved = false;
+
+    const timer = setTimeout(() => {
+      if (!resolved) reject(new Error(`App did not print "started" within ${String(timeoutMs)}ms`));
+    }, timeoutMs);
+
+    // stdout is always piped (stdio: ["ignore", "pipe", "inherit"])
+    (proc.stdout as NodeJS.ReadableStream).on("data", (chunk: Buffer) => {
+      if (!resolved && chunk.toString().includes("started")) {
+        resolved = true;
+        clearTimeout(timer);
+        resolve();
+      }
+    });
+
+    proc.on("close", (code) => {
+      clearTimeout(timer);
+      if (!resolved) {
+        reject(
+          new Error(
+            `App process closed with code ${String(code ?? "null")} before printing "started"`,
+          ),
+        );
+      }
+    });
+  });
 }
 
 function killGroup(proc: ChildProcess, signal: NodeJS.Signals = "SIGTERM"): void {
@@ -103,17 +113,15 @@ export const test = base.extend<
         DOMOVOID_NPM_PREFIX: prefixDirectory,
         ...appEnv,
       },
-      stdio: "inherit",
+      // pipe stdout to capture the "started" readiness signal; inherit stderr
+      stdio: ["ignore", "pipe", "inherit"],
       detached: true,
     });
 
     const exited = new Promise<number>((resolve) => proc.on("close", resolve));
 
-    const port = appEnv["PORT"] ?? "3000";
-    const url = `http://localhost:${port}`;
-
     try {
-      await waitForHealth(url, proc);
+      await waitForStarted(proc);
     } catch (error) {
       killGroup(proc, "SIGKILL");
       await exited;
@@ -121,11 +129,13 @@ export const test = base.extend<
       throw error;
     }
 
-    await use({ url, prefixDirectory, exited });
+    await use({ prefixDirectory, exited });
 
     if (proc.exitCode === null) {
-      // SIGTERM lets the SIGTERM handler run v8.takeCoverage() before the process exits
-      killGroup(proc);
+      // Send SIGTERM only to the daemon process (not the whole group) so any in-flight
+      // npm subprocess can complete — its .then() callback must run for branch coverage.
+      // SIGKILL the group as a fallback in case the daemon hangs.
+      proc.kill("SIGTERM");
       const timeout = setTimeout(() => {
         killGroup(proc, "SIGKILL");
       }, 5000);

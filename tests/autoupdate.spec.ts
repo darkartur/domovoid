@@ -56,7 +56,6 @@ async function publishToVerdaccio(version: string): Promise<void> {
 }
 
 const BASE_ENV = {
-  PORT: "3002",
   REGISTRY_URL: VERDACCIO,
   DOMOVOID_UPDATE_INTERVAL_MS: "100",
   DOMOVOID_NPM_REGISTRY: VERDACCIO,
@@ -66,43 +65,57 @@ const BASE_ENV = {
 // Verdaccio state is cumulative: "no update" publishes only 0.1.0 first,
 // then the update suites add 0.2.0.
 
-// Runs before any package is published so verdaccio returns 404 for /latest,
-// which exercises the non-OK registry response (autoupdate.ts:15-16) and
-// the transient-error catch handler (autoupdate.ts:47-48).
+// Runs before any package is published so npm view returns an error,
+// which exercises the transient-error catch handler in autoupdate.ts.
 test.describe("registry error", () => {
   test.use({ appEnv: { ...BASE_ENV, DOMOVOID_NO_RESTART: "1" } });
 
-  test("app stays healthy after a transient registry error", async ({ app }) => {
-    // Wait for at least one poll interval to fire and hit the 404 from verdaccio
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    const response = await fetch(`${app.url}/health`);
-    expect(response.status).toBe(200);
+  test("app stays alive after a transient registry error", async ({ app }) => {
+    // Wait for at least one poll interval to fire and fail
+    const ALIVE = Symbol("alive");
+    const result = await Promise.race([
+      app.exited.then(() => "exited" as const),
+      new Promise<typeof ALIVE>((resolve) =>
+        setTimeout(() => {
+          resolve(ALIVE);
+        }, 400),
+      ),
+    ]);
+    expect(result).toBe(ALIVE);
   });
 });
 
 // No REGISTRY_URL — exercises the cli/index.ts branch where autoupdate is skipped.
-// No PORT — exercises the `|| 3000` default-port branch (line 44).
-test.describe("health endpoint", () => {
+// The daemon prints "started" and exits immediately (event loop empty).
+test.describe("no registry", () => {
   test.use({ appEnv: { DOMOVOID_NO_RESTART: "1" } });
 
-  test("unknown path returns 404", async ({ app }) => {
-    const response = await fetch(`${app.url}/unknown`);
-    expect(response.status).toBe(404);
+  test("starts and exits cleanly without a registry URL", async ({ app }) => {
+    expect(await app.exited).toBe(0);
   });
 });
 
 // REGISTRY_URL set but DOMOVOID_UPDATE_INTERVAL_MS unset — exercises the
-// `|| 3_600_000` default-interval branch (line 37).
+// `|| 3_600_000` default-interval branch.
 test.describe("daemon with default update interval", () => {
-  test.use({ appEnv: { REGISTRY_URL: VERDACCIO, DOMOVOID_NO_RESTART: "1", PORT: "3001" } });
+  test.use({ appEnv: { REGISTRY_URL: VERDACCIO, DOMOVOID_NO_RESTART: "1" } });
 
   test.beforeAll(async () => {
     await publishToVerdaccio("0.1.0");
   });
 
-  test("starts healthy with default interval", async ({ app }) => {
-    const response = await fetch(`${app.url}/health`);
-    expect(response.status).toBe(200);
+  test("starts with the default one-hour interval", async ({ app }) => {
+    // Daemon is running; the interval is 1 hour so no update fires during the test
+    const ALIVE = Symbol("alive");
+    const result = await Promise.race([
+      app.exited.then(() => "exited" as const),
+      new Promise<typeof ALIVE>((resolve) =>
+        setTimeout(() => {
+          resolve(ALIVE);
+        }, 200),
+      ),
+    ]);
+    expect(result).toBe(ALIVE);
   });
 });
 
@@ -114,7 +127,7 @@ test.describe("no update available", () => {
   });
 
   test("does not install anything", async ({ app }) => {
-    // Wait a few intervals — no update should be triggered
+    // Wait for several check cycles — the interval is 100 ms
     await new Promise((resolve) => setTimeout(resolve, 400));
     const libraryDirectory = path.join(app.prefixDirectory, "lib");
     expect(
