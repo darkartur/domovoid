@@ -1,11 +1,8 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.build.json",
   "compilerOptions": {
-    "allowImportingTsExtensions": false,
-    "noEmit": false,
     "outDir": "./dist",
-    "rootDir": "./",
-    "sourceMap": true
+    "rootDir": "./"
   },
   "include": ["./**/*.ts"],
   "exclude": ["dist"]

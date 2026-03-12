@@ -16,7 +16,7 @@ npm run depfix         # auto-fix version mismatches, use it if spotted problems
 npm run test           # Playwright E2E tests — MUST pass before work is done
 ```
 
-We don't have any build step yet, but you already can use node to execute typescript directly:
+Run `npm run build` before running tests against the built output (`npm run test:built`). For development, TypeScript runs directly via Node.js type stripping:
 
 ```bash
 node packages/<pkg>/index.ts
@@ -39,6 +39,8 @@ npm workspaces monorepo. All packages live under `packages/`.
 - `@domovoid/core` — core AI agent runtime
 - `@domovoid/integration-telegram` — Telegram integration
 - `@domovoid/integration-github` — GitHub integration
+
+**Package exports rule:** Each library package exposes a single entrypoint `"."` in `exports`. Do not add sub-path exports (`"./utils"`, `"./types"`, etc.) — keep all public API behind the root import.
 
 ## Adding dependencies
 
