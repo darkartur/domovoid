@@ -2,6 +2,9 @@
   "name": "@domovoid/integration-telegram",
   "version": "0.1.0",
   "type": "module",
-  "private": true,
-  "description": "Telegram integration for domovoid"
+  "description": "Telegram integration for domovoid",
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "exports": "./index.ts"
 }
