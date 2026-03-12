@@ -13,5 +13,8 @@
   },
   "dependencies": {
     "@domovoid/plugin-utils": "0.1.0"
+  },
+  "devDependencies": {
+    "@anthropic-ai/claude-code": "^2.1.74"
   }
 }

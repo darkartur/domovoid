@@ -9,6 +9,12 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_APP_ID: ${{ secrets.BOT_APP_ID }}
+      GITHUB_APP_INSTALLATION_ID: ${{ secrets.BOT_APP_INSTALLATION_ID }}
+      GITHUB_APP_PRIVATE_KEY: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      CLAUDE_MODEL: claude-haiku-4-5-20251001
 
     steps:
       - uses: actions/checkout@v4
@@ -25,8 +31,6 @@ jobs:
       - run: npx playwright test
         env:
           NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
-          ANTHROPIC_BASE_URL: http://localhost:8082
-          REPLAY_ONLY: true
 
       - name: Check coverage thresholds
         run: npm run coverage:check
