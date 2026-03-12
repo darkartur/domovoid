@@ -1,4 +1,8 @@
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const claudeBin: string = require.resolve("@anthropic-ai/claude-code/cli.js");
 
 interface ClaudeResult {
   text: string;
@@ -14,7 +18,15 @@ export async function runClaude(options: ClaudeRunOptions): Promise<ClaudeResult
   const { prompt, token, repoCwd } = options;
 
   // Prompt is sent via stdin to avoid arg-parsing conflicts with variadic options
-  const flags = ["--print", "--output-format", "text", "--allowedTools", "Read,Glob,Grep,LS,Bash"];
+  const model = process.env["CLAUDE_MODEL"];
+  const flags = [
+    "--print",
+    "--output-format",
+    "text",
+    "--allowedTools",
+    "Read,Glob,Grep,LS,Bash",
+    ...(model === undefined ? [] : ["--model", model]),
+  ];
 
   const environment: NodeJS.ProcessEnv = { ...process.env };
   delete environment["CLAUDECODE"]; // allow spawning claude from within a claude session
@@ -23,7 +35,7 @@ export async function runClaude(options: ClaudeRunOptions): Promise<ClaudeResult
   }
 
   return new Promise((resolve, reject) => {
-    const child = spawn("claude", flags, {
+    const child = spawn(process.execPath, [claudeBin, ...flags], {
       // detached: own process group — survives SIGTERM sent to the parent's group
       stdio: ["pipe", "pipe", "pipe"],
       detached: true,
