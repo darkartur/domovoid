@@ -49,10 +49,11 @@ async function waitForHealth(url: string, proc: ChildProcess, timeoutMs = 10_000
   throw new Error(`App at ${url} did not become healthy within ${String(timeoutMs)}ms`);
 }
 
-function killGroup(proc: ChildProcess): void {
-  // Kill the entire process group so spawned children (e.g. npm install) also exit
+function killGroup(proc: ChildProcess, signal: NodeJS.Signals = "SIGTERM"): void {
+  // Kill the entire process group so spawned children (e.g. npm install) also exit.
+  // SIGTERM lets the daemon flush V8 coverage before exiting; SIGKILL is used as a fallback.
   try {
-    if (proc.pid !== undefined) process.kill(-proc.pid, "SIGKILL");
+    if (proc.pid !== undefined) process.kill(-proc.pid, signal);
   } catch {
     // Process may already have exited
   }
@@ -96,7 +97,12 @@ export const test = base.extend<
     // detached: true puts the child in its own process group so we can
     // kill it together with any grandchildren (e.g. npm install)
     const proc = spawn("node", ["packages/cli/index.ts"], {
-      env: { ...process.env, DOMOVOID_NPM_PREFIX: prefixDirectory, ...appEnv },
+      env: {
+        ...process.env,
+        NODE_V8_COVERAGE: COVERAGE_DIR,
+        DOMOVOID_NPM_PREFIX: prefixDirectory,
+        ...appEnv,
+      },
       stdio: "inherit",
       detached: true,
     });
@@ -109,7 +115,7 @@ export const test = base.extend<
     try {
       await waitForHealth(url, proc);
     } catch (error) {
-      killGroup(proc);
+      killGroup(proc, "SIGKILL");
       await exited;
       await fs.rm(prefixDirectory, { recursive: true, force: true });
       throw error;
@@ -117,8 +123,17 @@ export const test = base.extend<
 
     await use({ url, prefixDirectory, exited });
 
-    if (proc.exitCode === null) killGroup(proc);
-    await exited;
+    if (proc.exitCode === null) {
+      // SIGTERM lets the SIGTERM handler run v8.takeCoverage() before the process exits
+      killGroup(proc);
+      const timeout = setTimeout(() => {
+        killGroup(proc, "SIGKILL");
+      }, 5000);
+      await exited;
+      clearTimeout(timeout);
+    } else {
+      await exited;
+    }
     await fs.rm(prefixDirectory, { recursive: true, force: true });
   },
 });
