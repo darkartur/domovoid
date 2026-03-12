@@ -25,7 +25,11 @@ export const test = base.extend<{
         new Promise((resolve, reject) => {
           const child = USE_BUILT_CLI
             ? spawn(CLI_ENTRY, arguments_, {
-                env: { ...process.env, ...environment },
+                env: {
+                  ...process.env,
+                  NODE_V8_COVERAGE: COVERAGE_DIR,
+                  ...environment,
+                },
                 shell: false,
               })
             : spawn("node", [CLI_ENTRY, ...arguments_], {

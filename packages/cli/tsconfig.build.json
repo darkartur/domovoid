@@ -4,7 +4,8 @@
     "allowImportingTsExtensions": false,
     "noEmit": false,
     "outDir": "./dist",
-    "rootDir": "./"
+    "rootDir": "./",
+    "sourceMap": true
   },
   "include": ["./**/*.ts"],
   "exclude": ["dist"]
