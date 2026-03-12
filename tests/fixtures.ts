@@ -11,7 +11,7 @@ export interface CliResult {
 const USE_BUILT_CLI = Boolean(process.env["USE_BUILT_CLI"]);
 
 const CLI_ENTRY = USE_BUILT_CLI
-  ? nodePath.join(import.meta.dirname, "../packages/cli/dist/index.js")
+  ? nodePath.join(import.meta.dirname, "../packages/cli/bin.js")
   : nodePath.join(import.meta.dirname, "../packages/cli/index.ts");
 
 const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");

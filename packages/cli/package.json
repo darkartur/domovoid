@@ -4,10 +4,11 @@
   "type": "module",
   "description": "CLI for domovoid",
   "bin": {
-    "domovoid": "./dist/index.js"
+    "domovoid": "./bin.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node --input-type=module -e \"import {readFileSync,writeFileSync} from 'node:fs'; const js='dist/index.js'; writeFileSync(js,'#!/usr/bin/env node\\n'+readFileSync(js,'utf8')); const sm=JSON.parse(readFileSync('dist/index.js.map','utf8')); sm.mappings=';'+sm.mappings; writeFileSync('dist/index.js.map',JSON.stringify(sm));\" && chmod +x dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "tsc -p tsconfig.build.json",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
