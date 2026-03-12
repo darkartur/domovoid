@@ -47,7 +47,8 @@ async function publishToVerdaccio(version: string): Promise<void> {
       );
     } catch (error) {
       const message = (error as Error).message;
-      if (!message.includes("previously published") && !message.includes("already present")) throw error;
+      if (!message.includes("previously published") && !message.includes("already present"))
+        throw error;
     }
   } finally {
     await fs.rm(temporaryDirectory, { recursive: true, force: true });
