@@ -1,11 +1,12 @@
 import { definePlugin } from "@domovoid/plugin-utils";
-import { runWithSDK } from "./sdk.ts";
+import { runClaude } from "./subprocess.ts";
 
 export const claudeAgentPlugin = definePlugin(() => {
   return {
     agent: {
       async run({ prompt, workingDirectory }) {
-        return runWithSDK(prompt, workingDirectory);
+        const result = await runClaude({ prompt, repoCwd: workingDirectory });
+        return result.text;
       },
     },
   };
