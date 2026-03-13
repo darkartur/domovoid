@@ -19,7 +19,7 @@
     "prepublishOnly": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@domovoid/core": "workspace:*"
+    "@domovoid/runtime": "workspace:*"
   },
   "engines": {
     "node": ">=22.16.0"

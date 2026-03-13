@@ -26,9 +26,35 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    settings: {
+      "import-x/resolver": {
+        typescript: {
+          conditionNames: ["development", "types", "node", "import", "require", "default"],
+        },
+      },
+    },
+    rules: {
+      "n/no-missing-import": [
+        "error",
+        {
+          resolverConfig: {
+            conditionNames: ["development", "types", "node", "import", "require", "default"],
+          },
+        },
+      ],
+    },
   },
   {
     files: ["tests/**"],
     extends: [playwright.configs["flat/recommended"]],
+  },
+  {
+    // bin.js imports ./dist/index.js which only exists after a build.
+    // Resolution errors here are expected in development and are not actionable.
+    files: ["**/bin.js"],
+    rules: {
+      "n/no-missing-import": "off",
+      "import-x/no-unresolved": "off",
+    },
   },
 );
