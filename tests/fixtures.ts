@@ -8,11 +8,11 @@ export interface CliResult {
   exitCode: number;
 }
 
-const CLI_PATH = process.env["CLI_PATH"];
-
-const CLI_ENTRY = CLI_PATH
-  ? nodePath.join(import.meta.dirname, "..", CLI_PATH)
-  : nodePath.join(import.meta.dirname, "../packages/cli/index.ts");
+const CLI_ENTRY = nodePath.join(
+  import.meta.dirname,
+  "..",
+  process.env["CLI_PATH"] ?? "packages/cli/index.ts",
+);
 
 const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
 
@@ -23,22 +23,14 @@ export const test = base.extend<{
     await use(
       (arguments_, environment = {}) =>
         new Promise((resolve, reject) => {
-          const child = CLI_PATH
-            ? spawn(CLI_ENTRY, arguments_, {
-                env: {
-                  ...process.env,
-                  ...environment,
-                },
-                shell: false,
-              })
-            : spawn("node", [CLI_ENTRY, ...arguments_], {
-                env: {
-                  ...process.env,
-                  NODE_V8_COVERAGE: COVERAGE_DIR,
-                  ...environment,
-                },
-                shell: false,
-              });
+          const child = spawn("node", [CLI_ENTRY, ...arguments_], {
+            env: {
+              ...process.env,
+              NODE_V8_COVERAGE: COVERAGE_DIR,
+              ...environment,
+            },
+            shell: false,
+          });
           let stdout = "";
           let stderr = "";
           child.stdout.on("data", (chunk: Buffer) => {
