@@ -17,6 +17,7 @@ jobs:
           node-version-file: package.json
           cache: npm
       - run: npm ci
+      - run: npm run build
       - run: npm run tsc
       - run: npm run lint
       - run: npx prettier --check .
@@ -24,6 +25,7 @@ jobs:
       - run: npm run depcheck
       - run: npx playwright test
         env:
+          CLI_PATH: packages/cli/bin.js
           NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
 
       - name: Check coverage thresholds

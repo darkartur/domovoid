@@ -15,7 +15,6 @@ npm run knip           # unused exports / unlisted / unused deps. Run after all 
 npm run depcheck       # version consistency across workspaces
 npm run depfix         # auto-fix version mismatches, use it if spotted problems
 npm run test           # Playwright E2E tests — MUST pass before work is done
-npm run test:built     # build then run E2E tests against compiled output
 ```
 
 For development, TypeScript runs directly via Node.js type stripping:
