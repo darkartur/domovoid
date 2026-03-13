@@ -1,36 +1,4 @@
 import { spawn } from "node:child_process";
-import { readSync, readFileSync, existsSync } from "node:fs";
-
-function readTokenFromFd(fd: number): string | undefined {
-  try {
-    const chunks: Buffer[] = [];
-    const buf = Buffer.alloc(4096);
-    let bytesRead: number;
-    do {
-      bytesRead = readSync(fd, buf);
-      if (bytesRead > 0) chunks.push(buf.subarray(0, bytesRead));
-    } while (bytesRead > 0);
-    return chunks.length > 0 ? Buffer.concat(chunks).toString("utf8").trim() : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function readTokenFromFile(filePath: string): string | undefined {
-  try {
-    if (!existsSync(filePath)) return undefined;
-    return readFileSync(filePath, "utf8").trim() || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-const tokenFdEnvironment = process.env["CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR"];
-const tokenFileEnvironment = process.env["CLAUDE_SESSION_INGRESS_TOKEN_FILE"];
-const cachedToken: string | undefined =
-  process.env["CLAUDE_CODE_OAUTH_TOKEN"] ??
-  (tokenFdEnvironment ? readTokenFromFd(Number(tokenFdEnvironment)) : undefined) ??
-  (tokenFileEnvironment ? readTokenFromFile(tokenFileEnvironment) : undefined);
 
 interface ClaudeResult {
   text: string;
@@ -50,10 +18,8 @@ export async function runClaude(options: ClaudeRunOptions): Promise<ClaudeResult
 
   const environment: NodeJS.ProcessEnv = { ...process.env };
   delete environment["CLAUDECODE"]; // allow spawning claude from within a claude session
-  delete environment["CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR"]; // token is resolved below
-  const resolvedToken = token ?? cachedToken;
-  if (resolvedToken) {
-    environment["CLAUDE_CODE_OAUTH_TOKEN"] = resolvedToken;
+  if (token) {
+    environment["CLAUDE_CODE_OAUTH_TOKEN"] = token;
   }
 
   return new Promise((resolve, reject) => {
