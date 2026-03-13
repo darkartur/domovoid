@@ -35,6 +35,7 @@ All checks listed above must pass before work is done, after any work always mak
 ### End-to-end tests
 
 End-to-end tests are written with [Playwright](https://playwright.dev/) and located in `tests/` directory.
+**We do NOT use browsers.** Tests run via Playwright's Node.js API only — never install or launch browser binaries (`npx playwright install` is forbidden).
 They are criticial for any agentic work, this rules are important and should never be ignored:
 
 - Whenever you planning a new feature, first describe it in a form of e2e test
@@ -56,4 +57,5 @@ npm workspaces monorepo. All packages live under `packages/`.
 
 ## Adding dependencies
 
+Always add dependencies to the specific package that uses them (`packages/<pkg>/package.json`), not the root `package.json`.
 After `npm install`, re-run `knip` and `syncpack:check` to confirm clean state.
