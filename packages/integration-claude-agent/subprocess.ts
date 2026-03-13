@@ -60,8 +60,10 @@ export async function runClaude(options: ClaudeRunOptions): Promise<ClaudeResult
     child.on("close", (code: number | null) => {
       if (code !== 0) {
         const stderr = Buffer.concat(stderrChunks).toString();
+        const stdout = Buffer.concat(stdoutChunks).toString();
+        const detail = [stderr, stdout].filter(Boolean).join("\n");
         reject(
-          new Error(`Claude CLI exited with code ${String(code)}${stderr ? `\n${stderr}` : ""}`),
+          new Error(`Claude CLI exited with code ${String(code)}${detail ? `\n${detail}` : ""}`),
         );
         return;
       }

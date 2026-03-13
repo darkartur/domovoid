@@ -51,6 +51,7 @@
     "prettier": "^3.5.0",
     "syncpack": "^14.0.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.24.0"
+    "typescript-eslint": "^8.24.0",
+    "undici": "^7.22.0"
   }
 }

@@ -61,7 +61,8 @@ export function createGithubPlugin(repos: RepoConfig[]): PluginDefinition {
 
       vcs: {
         async clone(repositoryUrl, directoryPath) {
-          const baseDirectory = await ensureBaseClone(repositoryUrl, context.dataDirectory);
+          const { token } = (await octokit.auth({ type: "installation" })) as { token: string };
+          const baseDirectory = await ensureBaseClone(repositoryUrl, context.dataDirectory, token);
           await createWorktree(baseDirectory, directoryPath);
           worktreeMap.set(directoryPath, baseDirectory);
         },

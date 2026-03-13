@@ -11,7 +11,7 @@ export function createOctokitClient(): Octokit {
       authStrategy: createAppAuth,
       auth: {
         appId,
-        privateKey,
+        privateKey: privateKey.replaceAll(String.raw`\n`, "\n"),
         installationId: Number(installationId),
       },
     });
