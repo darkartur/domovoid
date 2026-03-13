@@ -5,6 +5,5 @@
     "rootDir": "./",
     "declaration": true
   },
-  "include": ["./**/*.ts"],
-  "exclude": ["dist"]
+  "include": ["./index.ts"]
 }
