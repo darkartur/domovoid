@@ -24,6 +24,8 @@ jobs:
       - run: npm run knip
       - run: npm run depcheck
       - run: npx playwright test
+        env:
+          CLI_PATH: packages/cli/bin.js
 
       - name: Check coverage thresholds
         run: npm run coverage:check
