@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures.ts";
-import { VERSION } from "../packages/core/index.ts";
+import { VERSION } from "../packages/core/src/index.ts";
 
 test("--help prints usage and exits 0", async ({ cli }) => {
   const result = await cli(["--help"]);
