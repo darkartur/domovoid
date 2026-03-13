@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm run start          # start the agent locally
+npm run build          # compile all packages to dist/
 npm run tsc            # type-check all packages
 npm run lint           # eslint
 npm run lint:fix       # eslint --fix, run after each change; you can also use `npx eslint --fix <file>`
@@ -14,9 +15,10 @@ npm run knip           # unused exports / unlisted / unused deps. Run after all 
 npm run depcheck       # version consistency across workspaces
 npm run depfix         # auto-fix version mismatches, use it if spotted problems
 npm run test           # Playwright E2E tests — MUST pass before work is done
+npm run test:built     # build then run E2E tests against compiled output
 ```
 
-Run `npm run build` before running tests against the built output (`npm run test:built`). For development, TypeScript runs directly via Node.js type stripping:
+For development, TypeScript runs directly via Node.js type stripping:
 
 ```bash
 node packages/<pkg>/index.ts
