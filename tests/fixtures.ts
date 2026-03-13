@@ -11,7 +11,7 @@ export interface CliResult {
 const CLI_ENTRY = nodePath.join(
   import.meta.dirname,
   "..",
-  process.env["CLI_PATH"] ?? "packages/cli/index.ts",
+  process.env["CLI_PATH"] ?? "packages/cli/src/index.ts",
 );
 
 const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
