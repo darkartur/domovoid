@@ -26,7 +26,6 @@ jobs:
       - run: npx playwright test
         env:
           CLI_PATH: packages/cli/bin.js
-          NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
 
       - name: Check coverage thresholds
         run: npm run coverage:check
