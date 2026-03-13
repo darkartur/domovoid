@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "type": "module",
   "description": "CLI for domovoid",
+  "files": [
+    "dist",
+    "bin.js"
+  ],
   "bin": {
     "domovoid": "./bin.js"
   },
