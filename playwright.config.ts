@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 import { loadEnvFile } from "node:process";
-import { existsSync, readSync } from "node:fs";
+import { existsSync, readSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 if (existsSync(".env")) {
@@ -22,10 +22,21 @@ function readTokenFromFd(fd: number): string | undefined {
   }
 }
 
+function readTokenFromFile(filePath: string): string | undefined {
+  try {
+    if (!existsSync(filePath)) return undefined;
+    return readFileSync(filePath, "utf8").trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 const tokenFdEnvironment = process.env["CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR"];
+const tokenFileEnvironment = process.env["CLAUDE_SESSION_INGRESS_TOKEN_FILE"];
 const claudeToken =
   process.env["CLAUDE_CODE_OAUTH_TOKEN"] ??
-  (tokenFdEnvironment ? readTokenFromFd(Number(tokenFdEnvironment)) : undefined);
+  (tokenFdEnvironment ? readTokenFromFd(Number(tokenFdEnvironment)) : undefined) ??
+  (tokenFileEnvironment ? readTokenFromFile(tokenFileEnvironment) : undefined);
 
 const DOMOVOID_DIR = path.resolve("./.domovoid");
 process.env["DOMOVOID_DIR"] = DOMOVOID_DIR;
