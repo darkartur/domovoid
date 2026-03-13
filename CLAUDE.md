@@ -38,8 +38,6 @@ npm workspaces monorepo. All packages live under `packages/`.
 **Packages:**
 
 - `@domovoid/core` — core AI agent runtime
-- `@domovoid/integration-telegram` — Telegram integration
-- `@domovoid/integration-github` — GitHub integration
 
 **Package exports rule:** Each library package exposes a single entrypoint `"."` in `exports`. Do not add sub-path exports (`"./utils"`, `"./types"`, etc.) — keep all public API behind the root import.
 
