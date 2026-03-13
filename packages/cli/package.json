@@ -2,8 +2,17 @@
   "name": "@domovoid/cli",
   "version": "0.1.0",
   "type": "module",
-  "private": true,
   "description": "CLI for domovoid",
+  "bin": {
+    "domovoid": "./bin.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@domovoid/core": "0.1.0"
+  },
   "engines": {
     "node": ">=22.16.0"
   }

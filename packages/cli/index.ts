@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { VERSION } from "../core/index.ts";
+import { VERSION } from "@domovoid/core";
 
 function main(): void {
   try {

@@ -22,6 +22,7 @@
   ],
   "scripts": {
     "start": "node ./packages/cli/index.ts",
+    "build": "npm run build --workspaces --if-present",
     "tsc": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
