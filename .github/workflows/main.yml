@@ -43,6 +43,9 @@ jobs:
           docker exec "$CID" sh -c "pkill node || true"
           docker exec -d "$CID" /usr/local/bin/verdaccio
 
+      - name: Publish to Verdaccio
+        run: pnpm publish -r --registry http://localhost:4873
+
       - run: pnpm exec playwright test
         env:
           CLI_PATH: packages/cli/bin.js
