@@ -1,3 +1,13 @@
 storage: ./.verdaccio
 web:
   enable: false
+packages:
+  "@domovoid/*":
+    access: $all
+    publish: $anonymous
+    unpublish: $anonymous
+  "**":
+    access: $all
+    publish: $authenticated
+    unpublish: $authenticated
+    proxy: npmjs
