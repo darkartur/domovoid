@@ -16,11 +16,10 @@
     "domovoid": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@domovoid/core": "0.1.0"
+    "@domovoid/core": "workspace:*"
   },
   "engines": {
     "node": ">=22.16.0"

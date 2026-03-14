@@ -30,7 +30,7 @@
     "knip": "knip",
     "depcheck": "syncpack lint",
     "depfix": "syncpack fix",
-    "verdaccio": "node ./scripts/verdaccio.js",
+    "verdaccio": "npx -y verdaccio --config ./verdaccio-config.yml",
     "test": "playwright test",
     "test:coverage": "playwright test && npm run coverage:check",
     "start:coverage": "NODE_V8_COVERAGE=coverage/tmp node ./packages/cli/src/index.ts",
@@ -52,7 +52,6 @@
     "prettier": "^3.5.0",
     "syncpack": "^14.0.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.24.0",
-    "verdaccio": "^6.3.1"
+    "typescript-eslint": "^8.24.0"
   }
 }
