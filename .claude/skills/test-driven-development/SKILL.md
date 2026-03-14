@@ -356,8 +356,7 @@ Before marking work complete:
 - [ ] Watched each test fail before implementing
 - [ ] Each test failed for expected reason (feature missing, not typo)
 - [ ] Wrote minimal code to pass each test
-- [ ] All tests pass (`npm test`)
-- [ ] Coverage still at 100% (`npm run coverage:check` — fails if any line is uncovered)
+- [ ] Tests pass and coverage stays at 100% (`npm run test:coverage`)
 - [ ] Output pristine (no errors, warnings)
 - [ ] Tests use real code (mocks only if unavoidable)
 - [ ] Edge cases and errors covered
@@ -400,8 +399,7 @@ Only then continue
 **Commands:**
 
 ```bash
-npm test                  # run tests, collect coverage data
-npm run coverage:check    # verify 100% — fails if any line uncovered
+npm run test:coverage     # run tests + verify 100% coverage
 npm run coverage:report   # HTML report at coverage/html/index.html
 ```
 
