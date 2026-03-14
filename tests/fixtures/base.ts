@@ -19,7 +19,10 @@ export const test = base.extend<{
     await use(
       (arguments_, environment = {}) =>
         new Promise((resolve, reject) => {
-          const child = spawn("domovoid", [...arguments_], {
+          const cliPath = CLI_PATH
+            ? nodePath.resolve(CLI_PATH, "node_modules/.bin/domovoid")
+            : "domovoid";
+          const child = spawn(cliPath, [...arguments_], {
             cwd: CLI_PATH,
             env: {
               ...process.env,
