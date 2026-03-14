@@ -1,43 +1,8 @@
 #!/usr/bin/env node
-import { rm, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import nodePath from "node:path";
 import { parseArgs } from "node:util";
-import { spawn } from "node:child_process";
 import { VERSION } from "@domovoid/runtime";
-
-const DAEMON_ENTRY = nodePath.join(import.meta.dirname, "../../runtime/dist/daemon.js");
-const PID_FILE = nodePath.join(tmpdir(), "domovoid.pid");
-
-async function startCommand(): Promise<void> {
-  const child = spawn("node", [DAEMON_ENTRY], {
-    detached: true,
-    stdio: "ignore",
-    env: process.env,
-  });
-  child.unref();
-
-  const { pid } = child;
-  /* c8 ignore next 3 -- spawn("node", …) always assigns a pid; undefined only when OS refuses to create the process */
-  if (pid === undefined) {
-    throw new Error("Failed to start daemon: could not get PID");
-  }
-
-  await writeFile(PID_FILE, String(pid));
-  process.stdout.write(`Daemon started (PID ${String(pid)})\n`);
-}
-
-async function stopCommand(): Promise<void> {
-  const content = await readFile(PID_FILE, "utf8");
-  const pid = Number.parseInt(content.trim(), 10);
-  if (Number.isNaN(pid)) {
-    throw new TypeError("Invalid PID in file");
-  }
-
-  process.kill(pid);
-  await rm(PID_FILE, { force: true });
-  process.stdout.write(`Daemon stopped (PID ${String(pid)})\n`);
-}
+import startCommand from "./commands/start.js";
+import stopCommand from "./commands/stop.js";
 
 async function main(): Promise<void> {
   try {
