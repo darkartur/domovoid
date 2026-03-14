@@ -186,6 +186,14 @@ Confirm:
 - Other tests still pass
 - Output pristine (no errors, warnings)
 
+**Then verify coverage didn't drop:**
+
+```bash
+npm run coverage:check
+```
+
+If this fails, production code exists that no test exercises — a direct sign TDD was skipped. Add the missing test before continuing.
+
 **Test fails?** Fix code, not test.
 
 **Other tests fail?** Fix now.
@@ -349,7 +357,7 @@ Before marking work complete:
 - [ ] Each test failed for expected reason (feature missing, not typo)
 - [ ] Wrote minimal code to pass each test
 - [ ] All tests pass (`npm test`)
-- [ ] Coverage at 100% — run `npm test` and check the coverage report
+- [ ] Coverage still at 100% (`npm run coverage:check` — fails if any line is uncovered)
 - [ ] Output pristine (no errors, warnings)
 - [ ] Tests use real code (mocks only if unavoidable)
 - [ ] Edge cases and errors covered
@@ -370,6 +378,34 @@ Can't check all boxes? You skipped TDD. Start over.
 Bug found? Write failing test reproducing it. Follow TDD cycle. Test proves fix and prevents regression.
 
 Never fix bugs without a test.
+
+## Coverage as a TDD Signal
+
+This codebase maintains 100% line coverage. That's not a goal in itself — it's a natural consequence of strict TDD.
+
+**The connection:**
+
+- Every line of production code is written in response to a failing test → every line is covered
+- If `npm run coverage:check` fails, a line exists with no test → TDD was skipped
+
+**Coverage drop = mandatory stop:**
+
+```
+Coverage fails → STOP
+Find the uncovered code
+Write a test that covers it (RED → GREEN)
+Only then continue
+```
+
+**Commands:**
+
+```bash
+npm test                  # run tests, collect coverage data
+npm run coverage:check    # verify 100% — fails if any line uncovered
+npm run coverage:report   # HTML report at coverage/html/index.html
+```
+
+Don't chase coverage by writing trivial tests. If you can't easily cover a line with a meaningful test, the design is wrong — simplify or delete dead code.
 
 ## Testing Anti-Patterns
 
