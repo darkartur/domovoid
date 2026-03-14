@@ -1,7 +1,11 @@
+import { writeFile } from "node:fs/promises";
+import nodePath from "node:path";
+import { tmpdir } from "node:os";
 import { test, expect } from "./fixtures/base.ts";
 import { DEFAULT_PORT } from "../packages/runtime/src/index.ts";
 
 const TEST_PORT = 17_777;
+const PID_FILE = nodePath.join(tmpdir(), "domovoid.pid");
 
 async function healthStatus(port: number): Promise<number | undefined> {
   try {
@@ -41,4 +45,20 @@ test("stop terminates the daemon", async ({ cli }) => {
   expect(stopResult.stdout).toContain("Daemon stopped");
 
   await expect.poll(() => healthStatus(TEST_PORT), { timeout: 2000 }).toBeUndefined();
+});
+
+test("daemon uses DEFAULT_PORT when DOMOVOID_PORT is not set", async ({ cli }) => {
+  try {
+    await cli(["start"]);
+    await expect.poll(() => healthStatus(DEFAULT_PORT)).toBe(200);
+  } finally {
+    await cli(["stop"]);
+  }
+});
+
+test("stop fails when PID file contains invalid content", async ({ cli }) => {
+  await writeFile(PID_FILE, "not-a-number");
+  const result = await cli(["stop"]);
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr).toContain("Error");
 });
