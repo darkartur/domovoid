@@ -4,8 +4,8 @@ web:
 packages:
   "@domovoid/*":
     access: $all
-    publish: $anonymous
-    unpublish: $anonymous
+    publish: $all
+    unpublish: $all
   "**":
     access: $all
     publish: $authenticated
