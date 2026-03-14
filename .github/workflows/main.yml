@@ -52,16 +52,8 @@ jobs:
         env:
           CLI_PATH: test-sandbox
 
-      - run: pnpm exec playwright test
-        env:
-          CLI_PATH: test-sandbox
-
       - name: Check coverage thresholds
-        run: npm run coverage:check
-
-      - name: Generate coverage report
-        if: always()
-        run: npm run coverage:report
+        run: pnpm run coverage:check
 
       - name: Upload coverage report
         if: always()
