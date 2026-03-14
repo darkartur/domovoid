@@ -1,4 +1,4 @@
-import { startDaemon } from "./src/index.ts";
+import { startDaemon } from "./index.js";
 
 const server = await startDaemon();
 

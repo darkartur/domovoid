@@ -6,11 +6,11 @@ import { parseArgs } from "node:util";
 import { spawn } from "node:child_process";
 import { VERSION } from "@domovoid/runtime";
 
-const DAEMON_ENTRY = nodePath.join(import.meta.dirname, "../../runtime/daemon.ts");
+const DAEMON_ENTRY = nodePath.join(import.meta.dirname, "../../runtime/dist/daemon.js");
 const PID_FILE = nodePath.join(tmpdir(), "domovoid.pid");
 
 async function startCommand(): Promise<void> {
-  const child = spawn("node", ["--conditions=development", DAEMON_ENTRY], {
+  const child = spawn("node", [DAEMON_ENTRY], {
     detached: true,
     stdio: "ignore",
     env: process.env,
