@@ -1,8 +1,8 @@
 {
-  "name": "@domovoid/core",
+  "name": "@domovoid/runtime",
   "version": "0.1.0",
   "type": "module",
-  "description": "Core AI agent runtime",
+  "description": "Domovoid daemon runtime",
   "files": [
     "dist",
     "src"
@@ -13,6 +13,7 @@
     "exports": "./dist/index.js"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "prepublishOnly": "tsc -p tsconfig.build.json"
   },
   "engines": {

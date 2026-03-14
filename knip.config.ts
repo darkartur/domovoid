@@ -9,7 +9,11 @@ export default {
     ".": {
       project: ["*.{js,ts}"],
     },
-    "packages/*": {
+    "packages/cli": {
+      project: ["**/*.ts"],
+    },
+    "packages/runtime": {
+      entry: ["src/daemon.ts"],
       project: ["**/*.ts"],
     },
   },
