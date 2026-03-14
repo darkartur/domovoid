@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures.ts";
+import { test, expect } from "./fixtures/base.ts";
 import { VERSION } from "../packages/core/src/index.ts";
 
 test("--help prints usage and exits 0", async ({ cli }) => {
