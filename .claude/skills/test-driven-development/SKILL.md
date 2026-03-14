@@ -212,14 +212,6 @@ Keep tests green. Don't add behavior.
 
 Next failing test for next feature.
 
-## Good Tests
-
-| Quality          | Good                                | Bad                                                 |
-| ---------------- | ----------------------------------- | --------------------------------------------------- |
-| **Minimal**      | One thing. "and" in name? Split it. | `test('validates email and domain and whitespace')` |
-| **Clear**        | Name describes behavior             | `test('test1')`                                     |
-| **Shows intent** | Demonstrates desired API            | Obscures what code should do                        |
-
 ## Why Order Matters
 
 **"I'll write tests after to verify it works"**
@@ -380,7 +372,7 @@ Never fix bugs without a test.
 
 ## Coverage as a TDD Signal
 
-This codebase maintains 100% line coverage. That's not a goal in itself — it's a natural consequence of strict TDD.
+This codebase maintains 100% line/branch coverage. That's not a goal in itself — it's a natural consequence of strict TDD.
 
 **The connection:**
 
