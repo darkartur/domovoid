@@ -32,6 +32,7 @@
     "depfix": "syncpack fix",
     "verdaccio": "npx -y verdaccio --config ./verdaccio-config.yml",
     "test": "playwright test",
+    "test:packaged": "CLI_PATH=test-sandbox playwright test",
     "test:coverage": "playwright test && npm run coverage:check",
     "start:coverage": "NODE_V8_COVERAGE=coverage/tmp node ./packages/cli/src/index.ts",
     "coverage:report": "c8 report --all --include='packages/*/src/**/*.ts' --exclude-after-remap --reporter=html --reporter=text --reports-dir=./coverage/html --temp-directory=./coverage/tmp",

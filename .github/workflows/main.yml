@@ -44,9 +44,17 @@ jobs:
       - name: Publish to Verdaccio
         run: pnpm publish -r --no-git-checks --access public --registry http://localhost:4873
 
+      - name: Insall from Verdaccio
+        working-directory: test-sandbox
+        run: npm i -D --registry http://localhost:4873/ @domovoid/cli@latest
+
       - run: pnpm exec playwright test
         env:
-          CLI_PATH: packages/cli/bin.js
+          CLI_PATH: test-sandbox
+
+      - run: pnpm exec playwright test
+        env:
+          CLI_PATH: test-sandbox
 
       - name: Check coverage thresholds
         run: npm run coverage:check

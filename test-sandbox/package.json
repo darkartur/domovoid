@@ -1,0 +1,8 @@
+{
+  "name": "test-sandbox",
+  "version": "1.0.0",
+  "description": "Domovoid testing directory",
+  "devDependencies": {
+    "@domovoid/cli": "^0.1.0"
+  }
+}
