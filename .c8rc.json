@@ -1,0 +1,15 @@
+{
+  "all": true,
+  "include": ["packages/*/src/**/*.ts"],
+  "exclude": ["coverage", "packages/*/test{,s}/**", "**/*.d.ts", "test{,s}/**"],
+  "exclude-node-modules": false,
+  "temp-directory": "./tests/coverage/tmp",
+  "reports-dir": "./coverage/html",
+  "reporter": ["text", "html"],
+  "exclude-after-remap": true,
+  "check-coverage": true,
+  "branches": 100,
+  "lines": 100,
+  "functions": 100,
+  "statements": 100
+}

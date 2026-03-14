@@ -3,15 +3,23 @@
   "version": "0.1.0",
   "type": "module",
   "description": "CLI for domovoid",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "publishConfig": {
+    "bin": {
+      "domovoid": "./dist/index.js"
+    }
+  },
   "bin": {
-    "domovoid": "./bin.js"
+    "domovoid": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@domovoid/core": "0.1.0"
+    "@domovoid/core": "workspace:*"
   },
   "engines": {
     "node": ">=22.16.0"

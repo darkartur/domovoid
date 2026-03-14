@@ -13,11 +13,12 @@ export default defineConfig(
   unicorn.configs.recommended,
   n.configs["flat/recommended"],
   {
-    files: ["**/*.ts", "**/*.js"],
+    files: ["**/*.ts"],
     extends: [
       ...tseslintConfigs.strictTypeChecked,
       ...tseslintConfigs.stylisticTypeChecked,
       importXFlatConfigs.recommended,
+      importXFlatConfigs.typescript as Linter.Config,
     ],
     languageOptions: {
       parserOptions: {
@@ -25,14 +26,6 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
-  },
-  {
-    files: ["**/*.ts"],
-    // importXFlatConfigs.typescript is typed as PluginFlatConfig whose languageOptions
-    // is @typescript-eslint/utils FlatConfig.LanguageOptions — a concrete interface without
-    // an index signature. defineConfig expects @eslint/core LanguageOptions = Record<string, unknown>.
-    // The cast is safe: the runtime value has no languageOptions at all (only settings/rules/plugins).
-    extends: [importXFlatConfigs.typescript as Linter.Config],
   },
   {
     files: ["tests/**"],

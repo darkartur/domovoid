@@ -30,11 +30,11 @@
     "knip": "knip",
     "depcheck": "syncpack lint",
     "depfix": "syncpack fix",
+    "verdaccio": "npx -y verdaccio --config ./verdaccio-config.yml",
     "test": "playwright test",
-    "test:coverage": "playwright test && npm run coverage:check",
-    "start:coverage": "NODE_V8_COVERAGE=coverage/tmp node ./packages/cli/src/index.ts",
-    "coverage:report": "c8 report --all --include='packages/*/src/**/*.ts' --exclude-after-remap --reporter=html --reporter=text --reports-dir=./coverage/html --temp-directory=./coverage/tmp",
-    "coverage:check": "c8 report --all --include='packages/*/src/**/*.ts' --exclude-after-remap --check-coverage --100 --temp-directory=./coverage/tmp --reporter=text"
+    "test:packaged": "CLI_PATH=test-sandbox playwright test",
+    "test:coverage": "playwright test && c8 report",
+    "coverage:check": "c8 report"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.3",
