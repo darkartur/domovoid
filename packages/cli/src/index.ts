@@ -18,6 +18,7 @@ async function startCommand(): Promise<void> {
   child.unref();
 
   const { pid } = child;
+  /* c8 ignore next 3 -- spawn("node", …) always assigns a pid; undefined only when OS refuses to create the process */
   if (pid === undefined) {
     throw new Error("Failed to start daemon: could not get PID");
   }

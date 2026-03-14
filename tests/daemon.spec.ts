@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { rm, writeFile } from "node:fs/promises";
 import nodePath from "node:path";
 import { tmpdir } from "node:os";
 import { test, expect } from "./fixtures/base.ts";
@@ -44,6 +44,13 @@ test("stop terminates the daemon", async ({ cli }) => {
   expect(stopResult.stdout).toContain("Daemon stopped");
 
   await expect.poll(() => healthStatus(), { timeout: 2000 }).toBeUndefined();
+});
+
+test("stop fails when no daemon is running", async ({ cli }) => {
+  await rm(PID_FILE, { force: true });
+  const result = await cli(["stop"]);
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr).toContain("Error");
 });
 
 test("stop fails when PID file contains invalid content", async ({ cli }) => {
