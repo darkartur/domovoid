@@ -3,32 +3,13 @@ import { DEFAULT_PORT } from "../packages/runtime/src/index.ts";
 
 const TEST_PORT = 17_777;
 
-function waitForHealth(port: number, timeoutMs = 5000): Promise<boolean> {
-  return new Promise((resolve) => {
-    const deadline = Date.now() + timeoutMs;
-
-    const check = (): void => {
-      fetch(`http://127.0.0.1:${String(port)}/health`)
-        .then((response) => {
-          if (response.ok) {
-            resolve(true);
-          } else if (Date.now() < deadline) {
-            setTimeout(check, 100);
-          } else {
-            resolve(false);
-          }
-        })
-        .catch(() => {
-          if (Date.now() < deadline) {
-            setTimeout(check, 100);
-          } else {
-            resolve(false);
-          }
-        });
-    };
-
-    check();
-  });
+async function healthStatus(port: number): Promise<number | undefined> {
+  try {
+    const response = await fetch(`http://127.0.0.1:${String(port)}/health`);
+    return response.status;
+  } catch {
+    return undefined;
+  }
 }
 
 test("DEFAULT_PORT is exported from runtime", () => {
@@ -41,11 +22,9 @@ test("start launches daemon and health endpoint returns ok", async ({ cli }) => 
     expect(startResult.exitCode).toBe(0);
     expect(startResult.stdout).toContain("Daemon started");
 
-    const healthy = await waitForHealth(TEST_PORT);
-    expect(healthy).toBe(true);
+    await expect.poll(() => healthStatus(TEST_PORT)).toBe(200);
 
     const response = await fetch(`http://127.0.0.1:${String(TEST_PORT)}/health`);
-    expect(response.status).toBe(200);
     const json = await response.json();
     expect(json).toEqual({ status: "ok" });
   } finally {
@@ -55,12 +34,11 @@ test("start launches daemon and health endpoint returns ok", async ({ cli }) => 
 
 test("stop terminates the daemon", async ({ cli }) => {
   await cli(["start"], { DOMOVOID_PORT: String(TEST_PORT) });
-  await waitForHealth(TEST_PORT);
+  await expect.poll(() => healthStatus(TEST_PORT)).toBe(200);
 
   const stopResult = await cli(["stop"]);
   expect(stopResult.exitCode).toBe(0);
   expect(stopResult.stdout).toContain("Daemon stopped");
 
-  const stillUp = await waitForHealth(TEST_PORT, 2000);
-  expect(stillUp).toBe(false);
+  await expect.poll(() => healthStatus(TEST_PORT), { timeout: 2000 }).toBeUndefined();
 });
