@@ -8,11 +8,7 @@ export interface CliResult {
   exitCode: number;
 }
 
-const CLI_ENTRY = nodePath.join(
-  import.meta.dirname,
-  "..",
-  process.env["CLI_PATH"] ?? "packages/cli/src/index.ts",
-);
+const CLI_PATH = process.env["CLI_PATH"];
 
 const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
 
@@ -23,10 +19,8 @@ export const test = base.extend<{
     await use(
       (arguments_, environment = {}) =>
         new Promise((resolve, reject) => {
-          const nodeArguments = process.env["NO_DEV_CONDITIONS"]
-            ? [CLI_ENTRY]
-            : ["--conditions=development", CLI_ENTRY];
-          const child = spawn("node", [...nodeArguments, ...arguments_], {
+          const child = spawn("domovoid", [...arguments_], {
+            cwd: CLI_PATH,
             env: {
               ...process.env,
               NODE_V8_COVERAGE: COVERAGE_DIR,
