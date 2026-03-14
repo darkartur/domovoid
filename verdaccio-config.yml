@@ -1,0 +1,3 @@
+storage: ./.verdaccio
+web:
+  enable: false
