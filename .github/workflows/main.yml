@@ -43,8 +43,43 @@ jobs:
           path: coverage/html/
           retention-days: 30
 
+  test-pack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Pack workspaces
+        run: npm pack --workspaces --pack-destination packed-tarballs
+      - name: Install packed tarballs
+        run: |
+          mkdir packed-test
+          CORE_TGZ=$(ls packed-tarballs/domovoid-core-*.tgz)
+          CLI_TGZ=$(ls packed-tarballs/domovoid-cli-*.tgz)
+          cat > packed-test/package.json << EOF
+          {
+            "name": "pack-test",
+            "type": "module",
+            "dependencies": {
+              "@domovoid/core": "file:../$CORE_TGZ",
+              "@domovoid/cli": "file:../$CLI_TGZ"
+            }
+          }
+          EOF
+          npm install --prefix packed-test
+      - name: Test packed packages
+        run: npx playwright test
+        env:
+          CLI_PATH: packed-test/node_modules/@domovoid/cli/bin.js
+          NO_DEV_CONDITIONS: "1"
+
   publish:
-    needs: check
+    needs: [check, test-pack]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:

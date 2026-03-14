@@ -5,7 +5,6 @@
   "description": "CLI for domovoid",
   "files": [
     "dist",
-    "src",
     "bin.js"
   ],
   "bin": {

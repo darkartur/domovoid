@@ -23,7 +23,10 @@ export const test = base.extend<{
     await use(
       (arguments_, environment = {}) =>
         new Promise((resolve, reject) => {
-          const child = spawn("node", ["--conditions=development", CLI_ENTRY, ...arguments_], {
+          const nodeArguments = process.env["NO_DEV_CONDITIONS"]
+            ? [CLI_ENTRY]
+            : ["--conditions=development", CLI_ENTRY];
+          const child = spawn("node", [...nodeArguments, ...arguments_], {
             env: {
               ...process.env,
               NODE_V8_COVERAGE: COVERAGE_DIR,
