@@ -53,7 +53,7 @@ jobs:
           CLI_PATH: test-sandbox
 
       - name: Check coverage thresholds
-        run: pnpm run coverage:check
+        run: pnpm exec c8 report --include='test-sandbox/node_modules/@domovoid/*/src/**/*.ts'
 
       - name: Upload coverage report
         if: always()
