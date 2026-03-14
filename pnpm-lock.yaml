@@ -56,11 +56,11 @@ importers:
 
   packages/cli:
     dependencies:
-      '@domovoid/core':
+      '@domovoid/runtime':
         specifier: workspace:*
-        version: link:../core
+        version: link:../runtime
 
-  packages/core: {}
+  packages/runtime: {}
 
 packages:
 
