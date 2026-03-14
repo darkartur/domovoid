@@ -121,7 +121,7 @@ Vague name, tests mock not code
 **MANDATORY. Never skip.**
 
 ```bash
-npm test path/to/test.test.ts
+npx playwright test tests/my-feature.spec.ts
 ```
 
 Confirm:
@@ -177,7 +177,7 @@ Don't add features, refactor other code, or "improve" beyond the test.
 **MANDATORY.**
 
 ```bash
-npm test path/to/test.test.ts
+npx playwright test tests/my-feature.spec.ts
 ```
 
 Confirm:
@@ -302,44 +302,43 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 
 ## Example: Bug Fix
 
-**Bug:** Empty email accepted
+**Bug:** Unknown flag exits with code 0 instead of non-zero
 
 **RED**
 
 ```typescript
-test("rejects empty email", async () => {
-  const result = await submitForm({ email: "" });
-  expect(result.error).toBe("Email required");
+test("unknown flag exits non-zero and writes to stderr", async ({ cli }) => {
+  const result = await cli(["--not-a-real-flag"]);
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr).not.toBe("");
 });
 ```
 
 **Verify RED**
 
 ```bash
-$ npm test
-FAIL: expected 'Email required', got undefined
+$ npx playwright test tests/cli.spec.ts
+FAIL: expected exitCode not to be 0, but received 0
 ```
 
 **GREEN**
 
 ```typescript
-function submitForm(data: FormData) {
-  if (!data.email?.trim()) {
-    return { error: "Email required" };
-  }
-  // ...
+if (unknownFlag) {
+  process.stderr.write(`Unknown flag: ${unknownFlag}\n`);
+  process.exit(1);
 }
 ```
 
 **Verify GREEN**
 
 ```bash
-$ npm test
+$ npx playwright test tests/cli.spec.ts
 PASS
 ```
 
 **REFACTOR**
-Extract validation for multiple fields if needed.
+Extract flag validation if multiple unknown-flag paths share the same logic.
 
 ## Verification Checklist
 
@@ -349,7 +348,8 @@ Before marking work complete:
 - [ ] Watched each test fail before implementing
 - [ ] Each test failed for expected reason (feature missing, not typo)
 - [ ] Wrote minimal code to pass each test
-- [ ] All tests pass
+- [ ] All tests pass (`npm test`)
+- [ ] Coverage at 100% — run `npm test` and check the coverage report
 - [ ] Output pristine (no errors, warnings)
 - [ ] Tests use real code (mocks only if unavoidable)
 - [ ] Edge cases and errors covered
@@ -373,7 +373,7 @@ Never fix bugs without a test.
 
 ## Testing Anti-Patterns
 
-When adding mocks or test utilities, read @testing-anti-patterns.md to avoid common pitfalls:
+When adding mocks or test utilities, read @.claude/skills/test-driven-development/testing-anti-patterns.md to avoid common pitfalls:
 
 - Testing mock behavior instead of real behavior
 - Adding test-only methods to production classes

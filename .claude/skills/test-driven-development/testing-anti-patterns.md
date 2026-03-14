@@ -23,17 +23,17 @@ Tests must verify real behavior, not mock behavior. Mocks are a means to isolate
 **The violation:**
 
 ```typescript
-// ❌ BAD: Testing that the mock exists
-test('renders sidebar', () => {
-  render(<Page />);
-  expect(screen.getByTestId('sidebar-mock')).toBeInTheDocument();
+// ❌ BAD: Testing that a stub marker appears in output
+test("--version prints version", async ({ cli }) => {
+  const result = await cli(["--version"]);
+  expect(result.stdout).toContain("[STUB]");
 });
 ```
 
 **Why this is wrong:**
 
-- You're verifying the mock works, not that the component works
-- Test passes when mock is present, fails when it's not
+- You're verifying the stub/mock was invoked, not that the real behavior works
+- Test passes when stub is present, fails when it's removed
 - Tells you nothing about real behavior
 
 **your human partner's correction:** "Are we testing the behavior of a mock?"
@@ -41,24 +41,21 @@ test('renders sidebar', () => {
 **The fix:**
 
 ```typescript
-// ✅ GOOD: Test real component or don't mock it
-test('renders sidebar', () => {
-  render(<Page />);  // Don't mock sidebar
-  expect(screen.getByRole('navigation')).toBeInTheDocument();
+// ✅ GOOD: Test the real output
+test("--version prints version", async ({ cli }) => {
+  const result = await cli(["--version"]);
+  expect(result.stdout.trim()).toBe(VERSION); // real value, not a stub marker
 });
-
-// OR if sidebar must be mocked for isolation:
-// Don't assert on the mock - test Page's behavior with sidebar present
 ```
 
 ### Gate Function
 
 ```
-BEFORE asserting on any mock element:
-  Ask: "Am I testing real component behavior or just mock existence?"
+BEFORE asserting on any mock/stub marker in output:
+  Ask: "Am I testing real CLI behavior or just that the stub ran?"
 
-  IF testing mock existence:
-    STOP - Delete the assertion or unmock the component
+  IF testing stub existence:
+    STOP - Delete the assertion or remove the stub
 
   Test real behavior instead
 ```
@@ -127,34 +124,37 @@ BEFORE adding any method to production class:
 **The violation:**
 
 ```typescript
-// ❌ BAD: Mock breaks test logic
-test("detects duplicate server", () => {
-  // Mock prevents config write that test depends on!
-  vi.mock("ToolCatalog", () => ({
-    discoverAndCacheTools: vi.fn().mockResolvedValue(undefined),
-  }));
-
-  await addServer(config);
-  await addServer(config); // Should throw - but won't!
+// ❌ BAD: Env var override hides a side-effect the test depends on
+test("detects duplicate config entry", async ({ cli }) => {
+  // Overriding CONFIG_PATH with a stub file prevents the real write
+  // that the second call needs to detect the duplicate!
+  const result1 = await cli(["add", "server"], { CONFIG_PATH: "/dev/null" });
+  const result2 = await cli(["add", "server"], { CONFIG_PATH: "/dev/null" });
+  expect(result2.exitCode).not.toBe(0); // never fails - config was never written
 });
 ```
 
 **Why this is wrong:**
 
-- Mocked method had side effect test depended on (writing config)
-- Over-mocking to "be safe" breaks actual behavior
+- The env override nuked the side effect (config write) the test depended on
+- Over-mocking "to be safe" breaks actual behavior
 - Test passes for wrong reason or fails mysteriously
 
 **The fix:**
 
 ```typescript
-// ✅ GOOD: Mock at correct level
-test("detects duplicate server", () => {
-  // Mock the slow part, preserve behavior test needs
-  vi.mock("MCPServerManager"); // Just mock slow server startup
+// ✅ GOOD: Point to a real temp file so the write actually happens
+test("detects duplicate config entry", async ({ cli }) => {
+  const configPath = await fs.mktemp("/tmp/domovoid-XXXXXX.json");
+  try {
+    const result1 = await cli(["add", "server"], { CONFIG_PATH: configPath });
+    expect(result1.exitCode).toBe(0); // first add succeeds, config written
 
-  await addServer(config); // Config written
-  await addServer(config); // Duplicate detected ✓
+    const result2 = await cli(["add", "server"], { CONFIG_PATH: configPath });
+    expect(result2.exitCode).not.toBe(0); // duplicate detected ✓
+  } finally {
+    await fs.unlink(configPath);
+  }
 });
 ```
 
