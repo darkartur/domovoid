@@ -37,11 +37,9 @@ jobs:
       - name: Apply Verdaccio config
         run: |
           CID=$(docker ps --filter name=verdaccio --format "{{.ID}}")
-
           docker cp verdaccio-config.yml "$CID:/verdaccio/conf/config.yaml"
-
-          docker exec "$CID" sh -c "pkill node || true"
-          docker exec -d "$CID" /usr/local/bin/verdaccio
+          docker restart "$CID"
+          timeout 30 bash -c 'until curl -sf http://localhost:4873/-/ping; do sleep 1; done'
 
       - name: Publish to Verdaccio
         run: pnpm publish -r --no-git-checks --access public --registry http://localhost:4873
