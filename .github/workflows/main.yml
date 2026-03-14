@@ -14,26 +14,6 @@ jobs:
         image: verdaccio/verdaccio:latest
         ports:
           - 4873:4873
-        options: >-
-          --entrypoint sh
-          -c "
-          cat <<'EOF' >/verdaccio/conf/config.yaml
-          web:
-            enable: false
-          packages:
-            "@domovoid/*":
-              access: \$all
-              publish: \$anonymous
-              unpublish: \$anonymous
-            "**":
-              access: \$all
-              publish: \$authenticated
-              unpublish: \$authenticated
-              proxy: npmjs
-          EOF
-
-          /usr/local/bin/verdaccio
-          "
     steps:
       - uses: actions/checkout@v4
       - name: Install pnpm
@@ -53,6 +33,16 @@ jobs:
       - run: pnpm exec prettier --check .
       - run: pnpm run knip
       - run: pnpm run depcheck
+
+      - name: Apply Verdaccio config
+        run: |
+          CID=$(docker ps --filter name=verdaccio --format "{{.ID}}")
+
+          docker cp verdaccio-config.yml "$CID:/verdaccio/conf/config.yaml"
+
+          docker exec "$CID" sh -c "pkill node || true"
+          docker exec -d "$CID" /usr/local/bin/verdaccio
+
       - run: pnpm exec playwright test
         env:
           CLI_PATH: packages/cli/bin.js
