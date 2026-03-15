@@ -69,7 +69,7 @@ async function main(): Promise<void> {
           currentVersion: version,
           registryUrl,
           intervalMs,
-          onUpdateInstalled: restart,
+          ...(restart ? { onUpdateInstalled: restart } : {}),
         });
         process.on("SIGTERM", () => {
           flushCoverage();
