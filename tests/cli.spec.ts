@@ -5,6 +5,8 @@ const { version } = createRequire(import.meta.url)("../packages/cli/package.json
   version: string;
 };
 
+test.use({ cliPath: "." });
+
 test("--help prints usage and exits 0", async ({ cli }) => {
   const result = await cli(["--help"]);
   expect(result.exitCode).toBe(0);

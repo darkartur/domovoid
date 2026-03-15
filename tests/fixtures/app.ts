@@ -16,6 +16,9 @@ interface AppOptions {
   appEnv: NodeJS.ProcessEnv;
 }
 
+// App fixture bootstraps the long-running daemon-style CLI entrypoint.
+// Base fixture is for one-off CLI commands; this adds prefix isolation,
+// started-waiting, and graceful shutdown for daemon lifecycle tests.
 const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
 const CLEANUP_RETRY_DELAY_MS = 150;
 const CLEANUP_RETRIES = 5;

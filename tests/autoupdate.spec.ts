@@ -25,11 +25,43 @@ function bumpPatch(version: string): string {
 
 const nextVersion = bumpPatch(currentVersion);
 
-const BASE_ENV = {
+const DEFAULT_UPDATE_ENV = {
   REGISTRY_URL,
   DOMOVOID_UPDATE_INTERVAL_MS: "100",
   DOMOVOID_NPM_REGISTRY: REGISTRY_URL,
 };
+
+const FAST_FAIL_NPM_ENV = {
+  npm_config_fetch_retries: "0",
+  npm_config_fetch_retry_mintimeout: "1",
+  npm_config_fetch_retry_maxtimeout: "1",
+};
+
+function createUpdateEnvironment(overrides: Record<string, string> = {}): Record<string, string> {
+  return { ...DEFAULT_UPDATE_ENV, ...overrides };
+}
+
+async function publishVersions(versions: string[], registryUrl = REGISTRY_URL): Promise<void> {
+  for (const version of versions) {
+    await publishRuntimeAndCli(version, registryUrl);
+  }
+}
+
+async function expectProcessAlive(
+  exited: Promise<number>,
+  durationMs: number,
+): Promise<void> {
+  const ALIVE = Symbol("alive");
+  const result = await Promise.race([
+    exited.then(() => "exited" as const),
+    new Promise<typeof ALIVE>((resolve) =>
+      setTimeout(() => {
+        resolve(ALIVE);
+      }, durationMs),
+    ),
+  ]);
+  expect(result).toBe(ALIVE);
+}
 
 test.use({ cliPath: "test-sandbox" });
 test.describe.configure({ mode: "serial" });
@@ -41,59 +73,30 @@ test.describe("source coverage", () => {
       REGISTRY_URL: "http://localhost:5999",
       DOMOVOID_UPDATE_INTERVAL_MS: "100",
       DOMOVOID_NO_RESTART: "1",
-      npm_config_fetch_retries: "0",
-      npm_config_fetch_retry_mintimeout: "1",
-      npm_config_fetch_retry_maxtimeout: "1",
+      ...FAST_FAIL_NPM_ENV,
     },
   });
 
   test("covers the autoupdate loop in source CLI", async ({ app }) => {
-    const ALIVE = Symbol("alive");
-    const result = await Promise.race([
-      app.exited.then(() => "exited" as const),
-      new Promise<typeof ALIVE>((resolve) =>
-        setTimeout(() => {
-          resolve(ALIVE);
-        }, 1000),
-      ),
-    ]);
-    expect(result).toBe(ALIVE);
-  });
-});
-
-test.describe("source update restart", () => {
-  test.use({ cliPath: ".", appEnv: { ...BASE_ENV } });
-
-  test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
-    await publishRuntimeAndCli(nextVersion, REGISTRY_URL);
-  });
-
-  test("exits after installing update in source CLI", async ({ app }) => {
-    test.setTimeout(60_000);
-    expect(await app.exited).toBe(0);
+    expect(app).toBeDefined();
+    await expectProcessAlive(app.exited, 1000);
   });
 });
 
 test.describe("source no update available", () => {
-  test.use({ cliPath: ".", appEnv: { ...BASE_ENV, DOMOVOID_NO_RESTART: "1" } });
+  test.use({
+    cliPath: ".",
+    appEnv: createUpdateEnvironment({ DOMOVOID_NO_RESTART: "1" }),
+  });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
+    await publishVersions([currentVersion]);
   });
 
   test("stays alive when latest version matches current in source CLI", async ({ app }) => {
+    expect(app).toBeDefined();
     test.setTimeout(10_000);
-    const ALIVE = Symbol("alive");
-    const result = await Promise.race([
-      app.exited.then(() => "exited" as const),
-      new Promise<typeof ALIVE>((resolve) =>
-        setTimeout(() => {
-          resolve(ALIVE);
-        }, 3000),
-      ),
-    ]);
-    expect(result).toBe(ALIVE);
+    await expectProcessAlive(app.exited, 3000);
   });
 });
 
@@ -104,23 +107,13 @@ test.describe("registry error", () => {
       REGISTRY_URL: "http://localhost:5999",
       DOMOVOID_UPDATE_INTERVAL_MS: "100",
       DOMOVOID_NO_RESTART: "1",
-      npm_config_fetch_retries: "0",
-      npm_config_fetch_retry_mintimeout: "1",
-      npm_config_fetch_retry_maxtimeout: "1",
+      ...FAST_FAIL_NPM_ENV,
     },
   });
 
   test("app stays alive after a transient registry error", async ({ app }) => {
-    const ALIVE = Symbol("alive");
-    const result = await Promise.race([
-      app.exited.then(() => "exited" as const),
-      new Promise<typeof ALIVE>((resolve) =>
-        setTimeout(() => {
-          resolve(ALIVE);
-        }, 1000),
-      ),
-    ]);
-    expect(result).toBe(ALIVE);
+    expect(app).toBeDefined();
+    await expectProcessAlive(app.exited, 1000);
   });
 });
 
@@ -139,28 +132,20 @@ test.describe("daemon with default update interval", () => {
   test.use({ appEnv: { REGISTRY_URL, DOMOVOID_NO_RESTART: "1" } });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
+    await publishVersions([currentVersion]);
   });
 
   test("starts with the default one-hour interval", async ({ app }) => {
-    const ALIVE = Symbol("alive");
-    const result = await Promise.race([
-      app.exited.then(() => "exited" as const),
-      new Promise<typeof ALIVE>((resolve) =>
-        setTimeout(() => {
-          resolve(ALIVE);
-        }, 200),
-      ),
-    ]);
-    expect(result).toBe(ALIVE);
+    expect(app).toBeDefined();
+    await expectProcessAlive(app.exited, 200);
   });
 });
 
 test.describe("no update available", () => {
-  test.use({ appEnv: { ...BASE_ENV, DOMOVOID_NO_RESTART: "1" } });
+  test.use({ appEnv: createUpdateEnvironment({ DOMOVOID_NO_RESTART: "1" }) });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
+    await publishVersions([currentVersion]);
   });
 
   test("does not install anything", async ({ app }) => {
@@ -177,11 +162,10 @@ test.describe("no update available", () => {
 });
 
 test.describe("update available", () => {
-  test.use({ appEnv: { ...BASE_ENV, DOMOVOID_NO_RESTART: "1" } });
+  test.use({ appEnv: createUpdateEnvironment({ DOMOVOID_NO_RESTART: "1" }) });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
-    await publishRuntimeAndCli(nextVersion, REGISTRY_URL);
+    await publishVersions([currentVersion, nextVersion]);
   });
 
   test("installs the new version under the prefix dir", async ({ app }) => {
@@ -209,42 +193,44 @@ test.describe("update available", () => {
 test.describe("update install failure", () => {
   test.use({
     appEnv: {
-      REGISTRY_URL,
-      DOMOVOID_UPDATE_INTERVAL_MS: "100",
+      ...createUpdateEnvironment(),
       DOMOVOID_NPM_REGISTRY: "http://localhost:5999",
       DOMOVOID_NO_RESTART: "1",
     },
   });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
-    await publishRuntimeAndCli(nextVersion, REGISTRY_URL);
+    await publishVersions([currentVersion, nextVersion]);
   });
 
   test("app stays alive after a transient install error", async ({ app }) => {
+    expect(app).toBeDefined();
     test.setTimeout(60_000);
-    const ALIVE = Symbol("alive");
-    const result = await Promise.race([
-      app.exited.then(() => "exited" as const),
-      new Promise<typeof ALIVE>((resolve) =>
-        setTimeout(() => {
-          resolve(ALIVE);
-        }, 800),
-      ),
-    ]);
-    expect(result).toBe(ALIVE);
+    await expectProcessAlive(app.exited, 800);
   });
 });
 
 test.describe("update triggers restart", () => {
-  test.use({ appEnv: { ...BASE_ENV } });
+  test.use({ appEnv: createUpdateEnvironment() });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
-    await publishRuntimeAndCli(nextVersion, REGISTRY_URL);
+    await publishVersions([currentVersion, nextVersion]);
   });
 
   test("process exits with code 0 after installing update", async ({ app }) => {
+    test.setTimeout(60_000);
+    expect(await app.exited).toBe(0);
+  });
+});
+
+test.describe("source update restart", () => {
+  test.use({ cliPath: ".", appEnv: createUpdateEnvironment() });
+
+  test.beforeAll(async () => {
+    await publishVersions([currentVersion, nextVersion]);
+  });
+
+  test("exits after installing update in source CLI", async ({ app }) => {
     test.setTimeout(60_000);
     expect(await app.exited).toBe(0);
   });

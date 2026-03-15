@@ -1,62 +1,12 @@
 #!/usr/bin/env node
-import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
-import { parseArgs, promisify } from "node:util";
+import { parseArgs } from "node:util";
 import v8 from "node:v8";
+import { startAutoUpdateLoop } from "./autoupdate.ts";
 import startCommand from "./commands/start.ts";
 import stopCommand from "./commands/stop.ts";
 
-const execFileAsync = promisify(execFile);
-const PACKAGE_NAME = "@domovoid/cli";
 const { version } = createRequire(import.meta.url)("../package.json") as { version: string };
-
-async function getLatestVersion(registryUrl: string): Promise<string> {
-  const { stdout } = await execFileAsync("npm", [
-    "view",
-    PACKAGE_NAME,
-    "version",
-    "--registry",
-    registryUrl,
-  ]);
-  return stdout.trim();
-}
-
-async function performUpdate(targetVersion: string): Promise<void> {
-  const arguments_ = ["install", "-g", `${PACKAGE_NAME}@${targetVersion}`];
-  const registry = process.env["DOMOVOID_NPM_REGISTRY"];
-  const prefix = process.env["DOMOVOID_NPM_PREFIX"];
-  if (registry) arguments_.push("--registry", registry);
-  if (prefix) arguments_.push("--prefix", prefix);
-  await execFileAsync("npm", arguments_);
-}
-
-/* c8 ignore next */
-function startAutoUpdateLoop(
-  currentVersion: string,
-  registryUrl: string,
-  onUpdateInstalled: (() => void) | undefined,
-  intervalMs = 3_600_000,
-): NodeJS.Timeout {
-  let installing = false;
-  return setInterval(() => {
-    if (installing) return;
-    void getLatestVersion(registryUrl)
-      .then(async (latest) => {
-        if (latest === currentVersion) return;
-        installing = true;
-        try {
-          await performUpdate(latest);
-          onUpdateInstalled?.();
-        } finally {
-          installing = false;
-        }
-      })
-      .catch(() => {
-        // Transient error (registry or install); retry on next interval
-        installing = false;
-      });
-  }, intervalMs);
-}
 
 async function main(): Promise<void> {
   try {
@@ -97,21 +47,32 @@ async function main(): Promise<void> {
     }
 
     if (!subcommand && values.help !== true) {
-      const restart =
-        process.env["DOMOVOID_NO_RESTART"] === "1"
-          ? undefined
-          : () => {
-              // Flush V8 coverage before exiting on update-triggered restart.
-              v8.takeCoverage();
-              process.exit(0);
-            };
+      const shouldRestart = process.env["DOMOVOID_NO_RESTART"] !== "1";
+      const shouldFlushCoverage = Boolean(process.env["NODE_V8_COVERAGE"]);
+      const flushCoverage = (): void => {
+        if (shouldFlushCoverage) {
+          v8.takeCoverage();
+        }
+      };
+      const restart = shouldRestart
+        ? () => {
+            // Flush V8 coverage before exiting on update-triggered restart.
+            flushCoverage();
+            process.exit(0);
+          }
+        : undefined;
 
       const registryUrl = process.env["REGISTRY_URL"];
       if (registryUrl) {
         const intervalMs = Number(process.env["DOMOVOID_UPDATE_INTERVAL_MS"]) || 3_600_000;
-        const timer = startAutoUpdateLoop(version, registryUrl, restart, intervalMs);
+        const timer = startAutoUpdateLoop({
+          currentVersion: version,
+          registryUrl,
+          intervalMs,
+          onUpdateInstalled: restart,
+        });
         process.on("SIGTERM", () => {
-          v8.takeCoverage();
+          flushCoverage();
           clearInterval(timer);
         });
       }
