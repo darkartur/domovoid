@@ -23,6 +23,17 @@ async function main(): Promise<void> {
 
     const [subcommand] = positionals;
 
+    if (values.help === true) {
+      if (subcommand === "start") {
+        process.stdout.write("Usage: domovoid start\n\nDescription:\n  Starts the daemon.\n");
+        return;
+      }
+      if (subcommand === "stop") {
+        process.stdout.write("Usage: domovoid stop\n\nDescription:\n  Stops the daemon.\n");
+        return;
+      }
+    }
+
     if (subcommand === "start") {
       await startCommand();
       return;

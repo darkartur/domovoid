@@ -34,3 +34,17 @@ test("unknown flag exits non-zero and writes to stderr", async ({ cli }) => {
   expect(result.exitCode).not.toBe(0);
   expect(result.stderr).not.toBe("");
 });
+
+test("start --help prints usage and does not start daemon", async ({ cli }) => {
+  const result = await cli(["start", "--help"]);
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout).toContain("Usage: domovoid start");
+  expect(result.stdout).not.toContain("Daemon started");
+});
+
+test("stop --help prints usage and does not stop daemon", async ({ cli }) => {
+  const result = await cli(["stop", "--help"]);
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout).toContain("Usage: domovoid stop");
+  expect(result.stdout).not.toContain("Daemon stopped");
+});
