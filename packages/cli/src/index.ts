@@ -30,6 +30,7 @@ async function performUpdate(targetVersion: string): Promise<void> {
   await execFileAsync("npm", arguments_);
 }
 
+/* c8 ignore next */
 function startAutoUpdateLoop(
   currentVersion: string,
   registryUrl: string,
@@ -100,6 +101,7 @@ async function main(): Promise<void> {
         process.env["DOMOVOID_NO_RESTART"] === "1"
           ? undefined
           : () => {
+              // Flush V8 coverage before exiting on update-triggered restart.
               v8.takeCoverage();
               process.exit(0);
             };

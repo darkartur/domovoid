@@ -1,18 +1,12 @@
-import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
 import { expect, test } from "./fixtures/app.ts";
+import { publishRuntimeAndCli } from "./util/verdaccio.ts";
 
-const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
 
 const REGISTRY_URL = "http://localhost:4873";
-const CLI_SRC = path.resolve("packages/cli");
-const RUNTIME_SRC = path.resolve("packages/runtime");
-
 const { version: currentVersion } = require("../packages/cli/package.json") as {
   version: string;
 };
@@ -31,61 +25,6 @@ function bumpPatch(version: string): string {
 
 const nextVersion = bumpPatch(currentVersion);
 
-async function publishPackage(
-  sourcePath: string,
-  version: string,
-  dependencyOverrides: Record<string, string> = {},
-): Promise<void> {
-  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "domovoid-pack-"));
-  try {
-    await fs.cp(sourcePath, temporaryDirectory, { recursive: true });
-
-    const packagePath = path.join(temporaryDirectory, "package.json");
-    const packageJson = JSON.parse(await fs.readFile(packagePath, "utf8")) as {
-      version: string;
-      dependencies?: Record<string, string>;
-      publishConfig?: Record<string, unknown>;
-    };
-
-    packageJson.version = version;
-    packageJson.dependencies = { ...packageJson.dependencies, ...dependencyOverrides };
-    delete packageJson.publishConfig;
-
-    await fs.writeFile(packagePath, JSON.stringify(packageJson, undefined, 2));
-
-    const { stdout } = await execFileAsync("npm", ["pack", "--json"], {
-      cwd: temporaryDirectory,
-    });
-    const [{ filename }] = JSON.parse(stdout) as [{ filename: string }];
-    const tarball = path.join(temporaryDirectory, filename);
-
-    const npmrc = path.join(temporaryDirectory, ".npmrc");
-    await fs.writeFile(npmrc, `//localhost:4873/:_authToken=test-token\n`);
-
-    try {
-      await execFileAsync(
-        "npm",
-        ["publish", "--access", "public", "--registry", REGISTRY_URL, tarball],
-        { env: { ...process.env, npm_config_userconfig: npmrc } },
-      );
-    } catch (error) {
-      const message = (error as Error).message;
-      if (!message.includes("previously published") && !message.includes("already present")) {
-        throw error;
-      }
-    }
-  } finally {
-    await fs.rm(temporaryDirectory, { recursive: true, force: true });
-  }
-}
-
-async function publishRuntimeAndCli(version: string): Promise<void> {
-  await publishPackage(RUNTIME_SRC, version);
-  await publishPackage(CLI_SRC, version, {
-    "@domovoid/runtime": version,
-  });
-}
-
 const BASE_ENV = {
   REGISTRY_URL,
   DOMOVOID_UPDATE_INTERVAL_MS: "100",
@@ -94,6 +33,47 @@ const BASE_ENV = {
 
 test.use({ cliPath: "test-sandbox" });
 test.describe.configure({ mode: "serial" });
+
+test.describe("source coverage", () => {
+  test.use({
+    cliPath: ".",
+    appEnv: {
+      REGISTRY_URL: "http://localhost:5999",
+      DOMOVOID_UPDATE_INTERVAL_MS: "100",
+      DOMOVOID_NO_RESTART: "1",
+      npm_config_fetch_retries: "0",
+      npm_config_fetch_retry_mintimeout: "1",
+      npm_config_fetch_retry_maxtimeout: "1",
+    },
+  });
+
+  test("covers the autoupdate loop in source CLI", async ({ app }) => {
+    const ALIVE = Symbol("alive");
+    const result = await Promise.race([
+      app.exited.then(() => "exited" as const),
+      new Promise<typeof ALIVE>((resolve) =>
+        setTimeout(() => {
+          resolve(ALIVE);
+        }, 1000),
+      ),
+    ]);
+    expect(result).toBe(ALIVE);
+  });
+});
+
+test.describe("source update restart", () => {
+  test.use({ cliPath: ".", appEnv: { ...BASE_ENV } });
+
+  test.beforeAll(async () => {
+    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
+    await publishRuntimeAndCli(nextVersion, REGISTRY_URL);
+  });
+
+  test("exits after installing update in source CLI", async ({ app }) => {
+    test.setTimeout(60_000);
+    expect(await app.exited).toBe(0);
+  });
+});
 
 // Runs against a bad registry URL so npm view fails, exercising the transient-error handler.
 test.describe("registry error", () => {
@@ -137,7 +117,7 @@ test.describe("daemon with default update interval", () => {
   test.use({ appEnv: { REGISTRY_URL, DOMOVOID_NO_RESTART: "1" } });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion);
+    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
   });
 
   test("starts with the default one-hour interval", async ({ app }) => {
@@ -158,7 +138,7 @@ test.describe("no update available", () => {
   test.use({ appEnv: { ...BASE_ENV, DOMOVOID_NO_RESTART: "1" } });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion);
+    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
   });
 
   test("does not install anything", async ({ app }) => {
@@ -178,8 +158,8 @@ test.describe("update available", () => {
   test.use({ appEnv: { ...BASE_ENV, DOMOVOID_NO_RESTART: "1" } });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion);
-    await publishRuntimeAndCli(nextVersion);
+    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
+    await publishRuntimeAndCli(nextVersion, REGISTRY_URL);
   });
 
   test("installs the new version under the prefix dir", async ({ app }) => {
@@ -215,8 +195,8 @@ test.describe("update install failure", () => {
   });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion);
-    await publishRuntimeAndCli(nextVersion);
+    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
+    await publishRuntimeAndCli(nextVersion, REGISTRY_URL);
   });
 
   test("app stays alive after a transient install error", async ({ app }) => {
@@ -238,8 +218,8 @@ test.describe("update triggers restart", () => {
   test.use({ appEnv: { ...BASE_ENV } });
 
   test.beforeAll(async () => {
-    await publishRuntimeAndCli(currentVersion);
-    await publishRuntimeAndCli(nextVersion);
+    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
+    await publishRuntimeAndCli(nextVersion, REGISTRY_URL);
   });
 
   test("process exits with code 0 after installing update", async ({ app }) => {

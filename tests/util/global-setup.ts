@@ -1,7 +1,32 @@
-import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 import { rm } from "node:fs/promises";
+import { publishPackage } from "./verdaccio.ts";
 
 const REGISTRY_URL = "http://localhost:4873";
+
+import { spawn } from "node:child_process";
+
+export default async function globalSetup(): Promise<void> {
+  await rm(".verdaccio", { recursive: true, force: true });
+
+  const require = createRequire(import.meta.url);
+  const { version } = require("../../packages/cli/package.json") as { version: string };
+  await publishPackage({
+    sourcePath: "packages/runtime",
+    versionOverride: version,
+    registryUrl: REGISTRY_URL,
+  });
+  await publishPackage({
+    sourcePath: "packages/cli",
+    versionOverride: version,
+    dependencyOverrides: { "@domovoid/runtime": version },
+    registryUrl: REGISTRY_URL,
+  });
+
+  await runCommand("npm", ["i", "--no-save", "--registry", REGISTRY_URL, "@domovoid/cli@latest"], {
+    cwd: "test-sandbox",
+  });
+}
 
 function runCommand(
   command: string,
@@ -39,25 +64,5 @@ function runCommand(
         ),
       );
     });
-  });
-}
-
-export default async function globalSetup(): Promise<void> {
-  await rm(".verdaccio", { recursive: true, force: true });
-
-  const publishArguments = [
-    "publish",
-    "--no-git-checks",
-    "--access",
-    "public",
-    "--registry",
-    REGISTRY_URL,
-  ];
-
-  await runCommand("pnpm", publishArguments, { cwd: "packages/runtime" });
-  await runCommand("pnpm", publishArguments, { cwd: "packages/cli" });
-
-  await runCommand("npm", ["i", "--no-save", "--registry", REGISTRY_URL, "@domovoid/cli@latest"], {
-    cwd: "test-sandbox",
   });
 }

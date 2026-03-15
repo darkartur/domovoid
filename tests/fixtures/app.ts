@@ -17,6 +17,30 @@ interface AppOptions {
 }
 
 const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
+const CLEANUP_RETRY_DELAY_MS = 150;
+const CLEANUP_RETRIES = 5;
+
+function isRetryableCleanupError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    (error.code === "ENOTEMPTY" || error.code === "EPERM" || error.code === "EACCES")
+  );
+}
+
+async function removeDirectoryWithRetry(path: string): Promise<void> {
+  for (let attempt = 0; attempt <= CLEANUP_RETRIES; attempt += 1) {
+    try {
+      await fs.rm(path, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      if (!isRetryableCleanupError(error) || attempt === CLEANUP_RETRIES) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, CLEANUP_RETRY_DELAY_MS * (attempt + 1)));
+    }
+  }
+}
 
 async function waitForStarted(proc: ChildProcess, timeoutMs = 10_000): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -87,7 +111,7 @@ export const test = base.extend<
     } catch (error) {
       killGroup(proc, "SIGKILL");
       await exited;
-      await fs.rm(prefixDirectory, { recursive: true, force: true });
+      await removeDirectoryWithRetry(prefixDirectory);
       throw error;
     }
 
@@ -104,7 +128,7 @@ export const test = base.extend<
       await exited;
     }
 
-    await fs.rm(prefixDirectory, { recursive: true, force: true });
+    await removeDirectoryWithRetry(prefixDirectory);
   },
 });
 
