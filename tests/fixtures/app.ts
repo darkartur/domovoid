@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import nodePath from "node:path";
 
-export interface AppFixture {
+interface AppFixture {
   /** Unique tmp dir auto-created and passed as DOMOVOID_NPM_PREFIX */
   prefixDirectory: string;
   /** Resolves with the exit code when the process exits */
