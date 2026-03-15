@@ -1,5 +1,9 @@
+import { createRequire } from "node:module";
 import { test, expect } from "./fixtures/base.ts";
-import { VERSION } from "../packages/core/src/index.ts";
+
+const { version } = createRequire(import.meta.url)("../packages/cli/package.json") as {
+  version: string;
+};
 
 test("--help prints usage and exits 0", async ({ cli }) => {
   const result = await cli(["--help"]);
@@ -16,7 +20,7 @@ test("-h is an alias for --help", async ({ cli }) => {
 test("--version prints the version and exits 0", async ({ cli }) => {
   const result = await cli(["--version"]);
   expect(result.exitCode).toBe(0);
-  expect(result.stdout.trim()).toBe(VERSION);
+  expect(result.stdout.trim()).toBe(version);
 });
 
 test("-v is an alias for --version", async ({ cli }) => {
@@ -29,4 +33,18 @@ test("unknown flag exits non-zero and writes to stderr", async ({ cli }) => {
   const result = await cli(["--not-a-real-flag"]);
   expect(result.exitCode).not.toBe(0);
   expect(result.stderr).not.toBe("");
+});
+
+test("start --help prints usage and does not start daemon", async ({ cli }) => {
+  const result = await cli(["start", "--help"]);
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout).toContain("Usage: domovoid start");
+  expect(result.stdout).not.toContain("Daemon started");
+});
+
+test("stop --help prints usage and does not stop daemon", async ({ cli }) => {
+  const result = await cli(["stop", "--help"]);
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout).toContain("Usage: domovoid stop");
+  expect(result.stdout).not.toContain("Daemon stopped");
 });

@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "start": "node ./packages/cli/src/index.ts",
-    "build": "npm run build --workspaces --if-present",
+    "build": "pnpm run -r prepublishOnly",
     "tsc": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

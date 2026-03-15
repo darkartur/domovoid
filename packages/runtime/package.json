@@ -1,14 +1,13 @@
 {
-  "name": "@domovoid/core",
+  "name": "@domovoid/runtime",
   "version": "0.1.0",
   "type": "module",
-  "description": "Core AI agent runtime",
+  "description": "Domovoid daemon runtime",
   "files": [
     "dist",
     "src"
   ],
   "exports": "./src/index.ts",
-  "types": "./src/index.ts",
   "publishConfig": {
     "exports": "./dist/index.js"
   },
