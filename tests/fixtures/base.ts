@@ -2,7 +2,7 @@ import { test as base } from "@playwright/test";
 import { spawn } from "node:child_process";
 import nodePath from "node:path";
 
-export interface CliResult {
+interface CliResult {
   stdout: string;
   stderr: string;
   exitCode: number;

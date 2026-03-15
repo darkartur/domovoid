@@ -29,7 +29,7 @@ All checks listed above must pass before work is done, after any work always mak
 
 - Suppress tsc errors with `@ts-ignore`, `@ts-expect-error`, or `as any`
 - Disable ESLint rules with `eslint-disable` comments
-- Add entries to `knip.config.ts` `ignoreDependencies` to silence knip
+- Add entries to `knip.config.ts` `ignoreDependencies` to silence knip (unless the user explicitly requests it)
 
 ## Architecture
 
