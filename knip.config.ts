@@ -9,10 +9,7 @@ export default {
     ".": {
       project: ["*.{js,ts}"],
     },
-    "packages/cli": {
-      project: ["**/*.ts"],
-    },
-    "packages/runtime": {
+    "packages/*": {
       project: ["**/*.ts"],
     },
   },
