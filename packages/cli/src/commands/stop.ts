@@ -1,8 +1,5 @@
 import { readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import nodePath from "node:path";
-
-const PID_FILE = nodePath.join(tmpdir(), "domovoid.pid");
+import { PID_FILE } from "../util/pid.ts";
 
 export default async function stopCommand(): Promise<void> {
   const content = await readFile(PID_FILE, "utf8");
