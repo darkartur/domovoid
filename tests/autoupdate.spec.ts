@@ -20,11 +20,11 @@ const { version: currentVersion } = require("../packages/cli/package.json") as {
 function bumpPatch(version: string): string {
   const [major, minor, patch, ...rest] = version.split(".");
   if (major === undefined || minor === undefined || patch === undefined || rest.length > 0) {
-    throw new Error(`Unexpected version format: ${version}`);
+    throw new TypeError(`Unexpected version format: ${version}`);
   }
   const nextPatch = Number(patch) + 1;
   if (!Number.isFinite(nextPatch)) {
-    throw new Error(`Unexpected version format: ${version}`);
+    throw new TypeError(`Unexpected version format: ${version}`);
   }
   return `${major}.${minor}.${String(nextPatch)}`;
 }

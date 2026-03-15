@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
-import { parseArgs } from "node:util";
-import { promisify } from "node:util";
+import { parseArgs, promisify } from "node:util";
 import v8 from "node:v8";
 import startCommand from "./commands/start.ts";
 import stopCommand from "./commands/stop.ts";

@@ -1,4 +1,4 @@
-import { test as base, expect } from "./base.ts";
+import { test as base } from "./base.ts";
 import { type ChildProcess, spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -108,4 +108,4 @@ export const test = base.extend<
   },
 });
 
-export { expect };
+export { expect } from "./base.ts";
