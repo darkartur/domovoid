@@ -75,6 +75,27 @@ test.describe("source update restart", () => {
   });
 });
 
+test.describe("source no update available", () => {
+  test.use({ cliPath: ".", appEnv: { ...BASE_ENV, DOMOVOID_NO_RESTART: "1" } });
+
+  test.beforeAll(async () => {
+    await publishRuntimeAndCli(currentVersion, REGISTRY_URL);
+  });
+
+  test("stays alive when latest version matches current in source CLI", async ({ app }) => {
+    const ALIVE = Symbol("alive");
+    const result = await Promise.race([
+      app.exited.then(() => "exited" as const),
+      new Promise<typeof ALIVE>((resolve) =>
+        setTimeout(() => {
+          resolve(ALIVE);
+        }, 1000),
+      ),
+    ]);
+    expect(result).toBe(ALIVE);
+  });
+});
+
 // Runs against a bad registry URL so npm view fails, exercising the transient-error handler.
 test.describe("registry error", () => {
   test.use({
