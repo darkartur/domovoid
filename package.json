@@ -31,6 +31,7 @@
     "depcheck": "syncpack lint",
     "depfix": "syncpack fix",
     "verdaccio": "npx -y verdaccio --config ./verdaccio-config.yml",
+    "verdaccio:test": "npx -y verdaccio --config ./tests/verdaccio.yaml",
     "test": "playwright test",
     "test:packaged": "CLI_PATH=test-sandbox playwright test",
     "test:coverage": "playwright test && c8 report",
