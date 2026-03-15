@@ -47,10 +47,7 @@ async function publishVersions(versions: string[], registryUrl = REGISTRY_URL): 
   }
 }
 
-async function expectProcessAlive(
-  exited: Promise<number>,
-  durationMs: number,
-): Promise<void> {
+async function expectProcessAlive(exited: Promise<number>, durationMs: number): Promise<void> {
   const ALIVE = Symbol("alive");
   const result = await Promise.race([
     exited.then(() => "exited" as const),
