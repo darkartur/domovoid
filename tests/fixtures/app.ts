@@ -1,21 +1,8 @@
-import { test as base } from "@playwright/test";
+import { test as base, expect } from "./base.ts";
 import { type ChildProcess, spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import nodePath from "node:path";
-
-// ── CLI fixture (for cli.spec.ts) ────────────────────────────────────────────
-
-export interface CliResult {
-  stdout: string;
-  stderr: string;
-  exitCode: number;
-}
-
-const CLI_ENTRY = nodePath.join(import.meta.dirname, "../packages/cli/index.ts");
-const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
-
-// ── App (daemon) fixture (for autoupdate.spec.ts) ────────────────────────────
 
 export interface AppFixture {
   /** Unique tmp dir auto-created and passed as DOMOVOID_NPM_PREFIX */
@@ -29,6 +16,8 @@ interface AppOptions {
   appEnv: NodeJS.ProcessEnv;
 }
 
+const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
+
 async function waitForStarted(proc: ChildProcess, timeoutMs = 10_000): Promise<void> {
   return new Promise((resolve, reject) => {
     let resolved = false;
@@ -37,8 +26,7 @@ async function waitForStarted(proc: ChildProcess, timeoutMs = 10_000): Promise<v
       if (!resolved) reject(new Error(`App did not print "started" within ${String(timeoutMs)}ms`));
     }, timeoutMs);
 
-    // stdout is always piped (stdio: ["ignore", "pipe", "inherit"])
-    (proc.stdout as NodeJS.ReadableStream).on("data", (chunk: Buffer) => {
+    (proc.stdout as NodeJS.ReadableStream | null)?.on("data", (chunk: Buffer) => {
       if (!resolved && chunk.toString().includes("started")) {
         resolved = true;
         clearTimeout(timer);
@@ -60,8 +48,6 @@ async function waitForStarted(proc: ChildProcess, timeoutMs = 10_000): Promise<v
 }
 
 function killGroup(proc: ChildProcess, signal: NodeJS.Signals = "SIGTERM"): void {
-  // Kill the entire process group so spawned children (e.g. npm install) also exit.
-  // SIGTERM lets the daemon flush V8 coverage before exiting; SIGKILL is used as a fallback.
   try {
     if (proc.pid !== undefined) process.kill(-proc.pid, signal);
   } catch {
@@ -72,48 +58,24 @@ function killGroup(proc: ChildProcess, signal: NodeJS.Signals = "SIGTERM"): void
 export const test = base.extend<
   AppOptions & {
     app: AppFixture;
-    cli: (arguments_: string[], environment?: Record<string, string>) => Promise<CliResult>;
   }
 >({
   appEnv: [{}, { option: true }],
 
-  cli: async ({}, use) => {
-    await use(
-      (arguments_, environment = {}) =>
-        new Promise((resolve, reject) => {
-          const child = spawn("node", [CLI_ENTRY, ...arguments_], {
-            env: { ...process.env, NODE_V8_COVERAGE: COVERAGE_DIR, ...environment },
-            shell: false,
-          });
-          let stdout = "";
-          let stderr = "";
-          child.stdout.on("data", (chunk: Buffer) => {
-            stdout += chunk.toString();
-          });
-          child.stderr.on("data", (chunk: Buffer) => {
-            stderr += chunk.toString();
-          });
-          child.on("close", (code) => {
-            resolve({ stdout, stderr, exitCode: code ?? 1 });
-          });
-          child.on("error", reject);
-        }),
-    );
-  },
-
-  app: async ({ appEnv }, use) => {
+  app: async ({ appEnv, cliPath }, use) => {
     const prefixDirectory = await fs.mkdtemp(nodePath.join(os.tmpdir(), "domovoid-test-"));
 
-    // detached: true puts the child in its own process group so we can
-    // kill it together with any grandchildren (e.g. npm install)
-    const proc = spawn("node", ["packages/cli/index.ts"], {
+    const resolvedCliPath = cliPath
+      ? nodePath.resolve(cliPath, "node_modules/.bin/domovoid")
+      : "domovoid";
+
+    const proc = spawn(resolvedCliPath, [], {
       env: {
         ...process.env,
         NODE_V8_COVERAGE: COVERAGE_DIR,
         DOMOVOID_NPM_PREFIX: prefixDirectory,
         ...appEnv,
       },
-      // pipe stdout to capture the "started" readiness signal; inherit stderr
       stdio: ["ignore", "pipe", "inherit"],
       detached: true,
     });
@@ -132,9 +94,6 @@ export const test = base.extend<
     await use({ prefixDirectory, exited });
 
     if (proc.exitCode === null) {
-      // Send SIGTERM only to the daemon process (not the whole group) so any in-flight
-      // npm subprocess can complete — its .then() callback must run for branch coverage.
-      // SIGKILL the group as a fallback in case the daemon hangs.
       proc.kill("SIGTERM");
       const timeout = setTimeout(() => {
         killGroup(proc, "SIGKILL");
@@ -144,8 +103,9 @@ export const test = base.extend<
     } else {
       await exited;
     }
+
     await fs.rm(prefixDirectory, { recursive: true, force: true });
   },
 });
 
-export { expect } from "@playwright/test";
+export { expect };

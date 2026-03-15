@@ -43,6 +43,10 @@ function runCommand(
 }
 
 export default async function globalSetup(): Promise<void> {
+  if (process.env["CI"]) {
+    return;
+  }
+
   await rm(".verdaccio", { recursive: true, force: true });
 
   const publishArguments = [

@@ -49,7 +49,7 @@ export default defineConfig(
     extends: [playwright.configs["flat/recommended"]],
   },
   {
-    files: ["packages/*/index.ts", "tests/mock-npm.ts"],
+    files: ["packages/*/index.ts", "packages/*/src/index.ts", "tests/mock-npm.ts"],
     rules: {
       "n/no-process-exit": "off",
       "unicorn/no-process-exit": "off",
