@@ -1,0 +1,1 @@
+/Users/arturudalov/Projects/domovoid/CLAUDE.md
