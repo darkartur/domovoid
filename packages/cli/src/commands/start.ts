@@ -1,9 +1,10 @@
 import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
-const DAEMON_ENTRY = nodePath.join(import.meta.dirname, "../../../runtime/dist/daemon.js");
+const DAEMON_ENTRY = fileURLToPath(import.meta.resolve("@domovoid/runtime"));
 const PID_FILE = nodePath.join(tmpdir(), "domovoid.pid");
 
 export default async function startCommand(): Promise<void> {

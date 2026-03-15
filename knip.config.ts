@@ -13,7 +13,6 @@ export default {
       project: ["**/*.ts"],
     },
     "packages/runtime": {
-      entry: ["src/daemon.ts"],
       project: ["**/*.ts"],
     },
   },

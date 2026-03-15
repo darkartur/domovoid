@@ -1,5 +1,9 @@
+import { createRequire } from "node:module";
 import { test, expect } from "./fixtures/base.ts";
-import { VERSION } from "../packages/runtime/src/index.ts";
+
+const { version } = createRequire(import.meta.url)("../packages/cli/package.json") as {
+  version: string;
+};
 
 test("--help prints usage and exits 0", async ({ cli }) => {
   const result = await cli(["--help"]);
@@ -16,7 +20,7 @@ test("-h is an alias for --help", async ({ cli }) => {
 test("--version prints the version and exits 0", async ({ cli }) => {
   const result = await cli(["--version"]);
   expect(result.exitCode).toBe(0);
-  expect(result.stdout.trim()).toBe(VERSION);
+  expect(result.stdout.trim()).toBe(version);
 });
 
 test("-v is an alias for --version", async ({ cli }) => {

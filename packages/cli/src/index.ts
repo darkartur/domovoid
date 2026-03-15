@@ -1,8 +1,10 @@
 #!/usr/bin/env node
+import { createRequire } from "node:module";
 import { parseArgs } from "node:util";
-import { VERSION } from "@domovoid/runtime";
 import startCommand from "./commands/start.js";
 import stopCommand from "./commands/stop.js";
+
+const { version } = createRequire(import.meta.url)("../package.json") as { version: string };
 
 async function main(): Promise<void> {
   try {
@@ -15,7 +17,7 @@ async function main(): Promise<void> {
     });
 
     if (values.version === true) {
-      process.stdout.write(`${VERSION}\n`);
+      process.stdout.write(`${version}\n`);
       return;
     }
 

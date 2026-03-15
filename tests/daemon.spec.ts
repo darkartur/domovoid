@@ -2,22 +2,18 @@ import { rm, writeFile } from "node:fs/promises";
 import nodePath from "node:path";
 import { tmpdir } from "node:os";
 import { test, expect } from "./fixtures/base.ts";
-import { DEFAULT_PORT } from "../packages/runtime/src/index.ts";
 
+const PORT = 7777;
 const PID_FILE = nodePath.join(tmpdir(), "domovoid.pid");
 
 async function healthStatus(): Promise<number | undefined> {
   try {
-    const response = await fetch(`http://127.0.0.1:${String(DEFAULT_PORT)}/health`);
+    const response = await fetch(`http://127.0.0.1:${String(PORT)}/health`);
     return response.status;
   } catch {
     return undefined;
   }
 }
-
-test("DEFAULT_PORT is exported from runtime", () => {
-  expect(DEFAULT_PORT).toBe(7777);
-});
 
 test("start launches daemon and health endpoint returns ok", async ({ cli }) => {
   try {
@@ -27,7 +23,7 @@ test("start launches daemon and health endpoint returns ok", async ({ cli }) => 
 
     await expect.poll(() => healthStatus()).toBe(200);
 
-    const response = await fetch(`http://127.0.0.1:${String(DEFAULT_PORT)}/health`);
+    const response = await fetch(`http://127.0.0.1:${String(PORT)}/health`);
     const json = await response.json();
     expect(json).toEqual({ status: "ok" });
   } finally {
