@@ -90,12 +90,20 @@ export async function publishPackage(options: PublishOptions): Promise<void> {
     }
     await fs.writeFile(packagePath, JSON.stringify(packageJson, undefined, 2));
 
-  const { npmrcEnv } = await writeTemporaryNpmrc(temporaryDirectory, registryUrl);
+    const { npmrcEnv } = await writeTemporaryNpmrc(temporaryDirectory, registryUrl);
 
     try {
       await runCommand(
         "pnpm",
-        ["publish", "--ignore-scripts", "--no-git-checks", "--access", "public", "--registry", registryUrl],
+        [
+          "publish",
+          "--ignore-scripts",
+          "--no-git-checks",
+          "--access",
+          "public",
+          "--registry",
+          registryUrl,
+        ],
         { cwd: temporaryDirectory, env: npmrcEnv },
       );
     } catch (error) {
@@ -109,10 +117,7 @@ export async function publishPackage(options: PublishOptions): Promise<void> {
   }
 }
 
-export async function publishRuntimeAndCli(
-  version: string,
-  registryUrl: string,
-): Promise<void> {
+export async function publishRuntimeAndCli(version: string, registryUrl: string): Promise<void> {
   await publishPackage({ sourcePath: "packages/runtime", versionOverride: version, registryUrl });
   await publishPackage({
     sourcePath: "packages/cli",
