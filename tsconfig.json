@@ -27,5 +27,5 @@
     "allowImportingTsExtensions": true,
     "customConditions": ["development"]
   },
-  "include": ["packages/**/*", "tests/**/*", "*.ts", "*.js"]
+  "include": ["packages/**/*", "tests/**/*", "*.ts", "*.js", "scripts/**/*.ts"]
 }

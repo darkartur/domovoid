@@ -9,11 +9,6 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    services:
-      verdaccio:
-        image: verdaccio/verdaccio:latest
-        ports:
-          - 4873:4873
     steps:
       - uses: actions/checkout@v4
       - name: Install pnpm
@@ -27,33 +22,19 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - run: pnpm run build
       - run: pnpm run tsc
       - run: pnpm run lint
       - run: pnpm exec prettier --check .
       - run: pnpm run knip
       - run: pnpm run depcheck
 
-      - name: Apply Verdaccio config
-        run: |
-          CID=$(docker ps --filter name=verdaccio --format "{{.ID}}")
-          docker cp verdaccio-config.yml "$CID:/verdaccio/conf/config.yaml"
-          docker restart "$CID"
-          timeout 30 bash -c 'until curl -sf http://localhost:4873/-/ping; do sleep 1; done'
-
-      - name: Publish to Verdaccio
-        run: pnpm publish -r --no-git-checks --access public --registry http://localhost:4873
-
-      - name: Insall from Verdaccio
-        working-directory: test-sandbox
-        run: npm i -D --registry http://localhost:4873/ @domovoid/cli@latest
-
       - run: pnpm exec playwright test
-        env:
-          CLI_PATH: test-sandbox
+
+      - name: Normalize coverage paths
+        run: pnpm run coverage:normalize
 
       - name: Check coverage thresholds
-        run: pnpm exec c8 report --include='test-sandbox/node_modules/@domovoid/*/src/**/*.ts'
+        run: pnpm run coverage:check
 
       - name: Upload coverage report
         if: always()

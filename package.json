@@ -30,15 +30,18 @@
     "knip": "knip",
     "depcheck": "syncpack lint",
     "depfix": "syncpack fix",
-    "verdaccio": "npx -y verdaccio --config ./verdaccio-config.yml",
-    "test": "playwright test",
+    "verdaccio": "verdaccio --config ./verdaccio-config.yml",
+    "coverage:clean": "node ./scripts/coverage-tools/clean.ts",
+    "coverage:normalize": "node ./scripts/coverage-tools/normalize.ts",
+    "test": "node ./scripts/coverage-tools/clean.ts && playwright test",
     "test:packaged": "CLI_PATH=test-sandbox playwright test",
-    "test:coverage": "playwright test && c8 report",
-    "coverage:check": "c8 report"
+    "test:coverage": "node ./scripts/coverage-tools/clean.ts && playwright test && node ./scripts/coverage-tools/normalize.ts && c8 report",
+    "coverage:check": "node ./scripts/coverage-tools/normalize.ts && c8 report"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.3",
     "@playwright/test": "^1.58.2",
+    "@domovoid/cli": "workspace:*",
     "@types/node": "^25.3.0",
     "c8": "^10.1.3",
     "eslint": "^9.20.0",
@@ -51,6 +54,7 @@
     "prettier": "^3.5.0",
     "syncpack": "^14.0.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.24.0"
+    "typescript-eslint": "^8.24.0",
+    "verdaccio": "^5.33.0"
   }
 }
