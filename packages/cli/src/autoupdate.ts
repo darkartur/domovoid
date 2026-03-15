@@ -40,16 +40,12 @@ export function startAutoUpdateLoop(options: AutoUpdateOptions): NodeJS.Timeout 
       .then(async (latest) => {
         if (latest === currentVersion) return;
         installing = true;
-        let updated = false;
         try {
           await performUpdate(latest);
-          updated = true;
         } finally {
           installing = false;
         }
-        if (updated) {
-          onUpdateInstalled?.();
-        }
+        onUpdateInstalled?.();
       })
       .catch(() => {
         // Transient error (registry or install); retry on next interval
