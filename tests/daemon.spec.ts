@@ -15,6 +15,8 @@ async function healthStatus(): Promise<number | undefined> {
   }
 }
 
+test.describe.configure({ mode: "serial" });
+
 test("start launches daemon and health endpoint returns ok", async ({ cli }) => {
   try {
     const startResult = await cli(["start"]);
@@ -28,6 +30,7 @@ test("start launches daemon and health endpoint returns ok", async ({ cli }) => 
     expect(json).toEqual({ status: "ok" });
   } finally {
     await cli(["stop"]);
+    await expect.poll(() => healthStatus()).toBeUndefined();
   }
 });
 

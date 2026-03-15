@@ -12,12 +12,17 @@ export default defineConfig(
   eslint.configs.recommended,
   unicorn.configs.recommended,
   n.configs["flat/recommended"],
+  importXFlatConfigs.recommended,
+  {
+    rules: {
+      "n/no-missing-import": "off",
+    },
+  },
   {
     files: ["**/*.ts"],
     extends: [
       ...tseslintConfigs.strictTypeChecked,
       ...tseslintConfigs.stylisticTypeChecked,
-      importXFlatConfigs.recommended,
       importXFlatConfigs.typescript as Linter.Config,
     ],
     languageOptions: {
@@ -25,6 +30,18 @@ export default defineConfig(
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
+    },
+    rules: {
+      "import-x/extensions": [
+        "error",
+        "ignorePackages",
+        {
+          ts: "always",
+          tsx: "always",
+          js: "never",
+          jsx: "never",
+        },
+      ],
     },
   },
   {

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
 import { parseArgs } from "node:util";
-import startCommand from "./commands/start.js";
-import stopCommand from "./commands/stop.js";
+import startCommand from "./commands/start.ts";
+import stopCommand from "./commands/stop.ts";
 
 const { version } = createRequire(import.meta.url)("../package.json") as { version: string };
 
