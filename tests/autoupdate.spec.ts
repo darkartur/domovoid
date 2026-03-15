@@ -102,6 +102,9 @@ test.describe("registry error", () => {
       REGISTRY_URL: "http://localhost:5999",
       DOMOVOID_UPDATE_INTERVAL_MS: "100",
       DOMOVOID_NO_RESTART: "1",
+      npm_config_fetch_retries: "0",
+      npm_config_fetch_retry_mintimeout: "1",
+      npm_config_fetch_retry_maxtimeout: "1",
     },
   });
 
@@ -112,7 +115,7 @@ test.describe("registry error", () => {
       new Promise<typeof ALIVE>((resolve) =>
         setTimeout(() => {
           resolve(ALIVE);
-        }, 400),
+        }, 1000),
       ),
     ]);
     expect(result).toBe(ALIVE);
@@ -198,6 +201,36 @@ test.describe("update available", () => {
         { timeout: 30_000, message: `Expected ${moduleDirectory} to exist after update` },
       )
       .toBe(true);
+  });
+});
+
+test.describe("update install failure", () => {
+  test.use({
+    appEnv: {
+      REGISTRY_URL,
+      DOMOVOID_UPDATE_INTERVAL_MS: "100",
+      DOMOVOID_NPM_REGISTRY: "http://localhost:5999",
+      DOMOVOID_NO_RESTART: "1",
+    },
+  });
+
+  test.beforeAll(async () => {
+    await publishRuntimeAndCli(currentVersion);
+    await publishRuntimeAndCli(nextVersion);
+  });
+
+  test("app stays alive after a transient install error", async ({ app }) => {
+    test.setTimeout(60_000);
+    const ALIVE = Symbol("alive");
+    const result = await Promise.race([
+      app.exited.then(() => "exited" as const),
+      new Promise<typeof ALIVE>((resolve) =>
+        setTimeout(() => {
+          resolve(ALIVE);
+        }, 800),
+      ),
+    ]);
+    expect(result).toBe(ALIVE);
   });
 });
 
