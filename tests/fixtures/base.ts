@@ -8,22 +8,22 @@ export interface CliResult {
   exitCode: number;
 }
 
-const CLI_PATH = process.env["CLI_PATH"];
-
 const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
 
 export const test = base.extend<{
   cli: (arguments_: string[], environment?: Record<string, string>) => Promise<CliResult>;
+  cliPath: string;
 }>({
-  cli: async ({}, use) => {
+  cliPath: [process.env["CLI_PATH"] ?? "", { option: true }],
+  cli: async ({ cliPath }, use) => {
     await use(
       (arguments_, environment = {}) =>
         new Promise((resolve, reject) => {
-          const cliPath = CLI_PATH
-            ? nodePath.resolve(CLI_PATH, "node_modules/.bin/domovoid")
+          const resolvedCliPath = cliPath
+            ? nodePath.resolve(cliPath, "node_modules/.bin/domovoid")
             : "domovoid";
-          const child = spawn(cliPath, [...arguments_], {
-            cwd: CLI_PATH,
+          const child = spawn(resolvedCliPath, [...arguments_], {
+            cwd: cliPath || undefined,
             env: {
               ...process.env,
               NODE_V8_COVERAGE: COVERAGE_DIR,
