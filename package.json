@@ -36,9 +36,13 @@
     "test": "node ./scripts/coverage-tools/clean.ts && playwright test",
     "test:packaged": "CLI_PATH=test-sandbox playwright test",
     "test:coverage": "node ./scripts/coverage-tools/clean.ts && playwright test && node ./scripts/coverage-tools/normalize.ts && c8 report",
-    "coverage:check": "node ./scripts/coverage-tools/normalize.ts && c8 report"
+    "coverage:check": "node ./scripts/coverage-tools/normalize.ts && c8 report",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm run build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.12",
     "@eslint/js": "^9.39.3",
     "@playwright/test": "^1.58.2",
     "@domovoid/cli": "workspace:*",
