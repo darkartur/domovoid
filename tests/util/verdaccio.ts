@@ -73,12 +73,7 @@ async function writeTemporaryNpmrc(
 }
 
 async function ensureDistribution(sourcePath: string): Promise<void> {
-  const distributionPath = path.join(sourcePath, "dist");
-  try {
-    await fs.access(distributionPath);
-  } catch {
-    await runCommand("pnpm", ["-C", sourcePath, "run", "prepublishOnly"]);
-  }
+  await runCommand("pnpm", ["-C", sourcePath, "run", "prepublishOnly"]);
 }
 
 export async function publishPackage(options: PublishOptions): Promise<void> {

@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { rm, writeFile } from "node:fs/promises";
 import nodePath from "node:path";
 import { tmpdir } from "node:os";
@@ -5,6 +6,10 @@ import { test, expect } from "./fixtures/base.ts";
 
 const PORT = 7777;
 const PID_FILE = nodePath.join(tmpdir(), "domovoid.pid");
+const require = createRequire(import.meta.url);
+const { version: runtimeVersion } = require("../packages/runtime/package.json") as {
+  version: string;
+};
 
 async function healthStatus(): Promise<number | undefined> {
   try {
@@ -27,7 +32,21 @@ test("start launches daemon and health endpoint returns ok", async ({ cli }) => 
 
     const response = await fetch(`http://127.0.0.1:${String(PORT)}/health`);
     const json = await response.json();
-    expect(json).toEqual({ status: "ok" });
+    expect(json).toEqual({ status: "ok", version: runtimeVersion });
+  } finally {
+    await cli(["stop"]);
+    await expect.poll(() => healthStatus()).toBeUndefined();
+  }
+});
+
+test("health endpoint includes runtime version", async ({ cli }) => {
+  try {
+    await cli(["start"]);
+    await expect.poll(() => healthStatus()).toBe(200);
+
+    const response = await fetch(`http://127.0.0.1:${String(PORT)}/health`);
+    const json = await response.json();
+    expect(json).toEqual({ status: "ok", version: runtimeVersion });
   } finally {
     await cli(["stop"]);
     await expect.poll(() => healthStatus()).toBeUndefined();

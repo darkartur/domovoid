@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
 import { parseArgs } from "node:util";
-import v8 from "node:v8";
-import { startAutoUpdateLoop } from "./autoupdate.ts";
 import startCommand from "./commands/start.ts";
 import stopCommand from "./commands/stop.ts";
 
@@ -47,37 +45,7 @@ async function main(): Promise<void> {
     }
 
     if (!subcommand && values.help !== true) {
-      const shouldRestart = process.env["DOMOVOID_NO_RESTART"] !== "1";
-      const shouldFlushCoverage = Boolean(process.env["NODE_V8_COVERAGE"]);
-      const flushCoverage = (): void => {
-        if (shouldFlushCoverage) {
-          v8.takeCoverage();
-        }
-      };
-      const restart = shouldRestart
-        ? () => {
-            // Flush V8 coverage before exiting on update-triggered restart.
-            flushCoverage();
-            process.exit(0);
-          }
-        : undefined;
-
-      const registryUrl = process.env["REGISTRY_URL"];
-      if (registryUrl) {
-        const intervalMs = Number(process.env["DOMOVOID_UPDATE_INTERVAL_MS"]) || 3_600_000;
-        const timer = startAutoUpdateLoop({
-          currentVersion: version,
-          registryUrl,
-          intervalMs,
-          ...(restart ? { onUpdateInstalled: restart } : {}),
-        });
-        process.on("SIGTERM", () => {
-          flushCoverage();
-          clearInterval(timer);
-        });
-      }
-
-      process.stdout.write("started\n");
+      await startCommand();
       return;
     }
 

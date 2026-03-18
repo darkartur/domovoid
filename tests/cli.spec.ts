@@ -50,3 +50,13 @@ test("stop --help prints usage and does not stop daemon", async ({ cli }) => {
   expect(result.stdout).toContain("Usage: domovoid stop");
   expect(result.stdout).not.toContain("Daemon stopped");
 });
+
+test("no-args starts the daemon", async ({ cli }) => {
+  try {
+    const result = await cli([]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Daemon started");
+  } finally {
+    await cli(["stop"]);
+  }
+});

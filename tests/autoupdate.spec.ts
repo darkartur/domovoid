@@ -1,13 +1,15 @@
 import { createRequire } from "node:module";
+import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
-import path from "node:path";
-import { expect, test } from "./fixtures/app.ts";
+import nodePath from "node:path";
+import { tmpdir } from "node:os";
+import { test, expect } from "./fixtures/base.ts";
 import { publishRuntimeAndCli } from "./util/verdaccio.ts";
 
-const require = createRequire(import.meta.url);
-
+const PORT = 7777;
 const REGISTRY_URL = "http://localhost:4873";
-const { version: currentVersion } = require("../packages/cli/package.json") as {
+const require = createRequire(import.meta.url);
+const { version: currentVersion } = require("../packages/runtime/package.json") as {
   version: string;
 };
 
@@ -25,7 +27,7 @@ function bumpPatch(version: string): string {
 
 const nextVersion = bumpPatch(currentVersion);
 
-const DEFAULT_UPDATE_ENV = {
+const BASE_UPDATE_ENV = {
   REGISTRY_URL,
   DOMOVOID_UPDATE_INTERVAL_MS: "100",
   DOMOVOID_NPM_REGISTRY: REGISTRY_URL,
@@ -37,8 +39,24 @@ const FAST_FAIL_NPM_ENV = {
   npm_config_fetch_retry_maxtimeout: "1",
 };
 
-function createUpdateEnvironment(overrides: Record<string, string> = {}): Record<string, string> {
-  return { ...DEFAULT_UPDATE_ENV, ...overrides };
+async function healthStatus(): Promise<number | undefined> {
+  try {
+    const response = await fetch(`http://127.0.0.1:${String(PORT)}/health`);
+    return response.status;
+  } catch {
+    return undefined;
+  }
+}
+
+async function withPrefixDirectory<T>(
+  function_: (prefixDirectory: string) => Promise<T>,
+): Promise<T> {
+  const prefixDirectory = await fs.mkdtemp(nodePath.join(tmpdir(), "domovoid-test-"));
+  try {
+    return await function_(prefixDirectory);
+  } finally {
+    await fs.rm(prefixDirectory, { recursive: true, force: true });
+  }
 }
 
 async function publishVersions(versions: string[], registryUrl = REGISTRY_URL): Promise<void> {
@@ -47,188 +65,318 @@ async function publishVersions(versions: string[], registryUrl = REGISTRY_URL): 
   }
 }
 
-async function expectProcessAlive(exited: Promise<number>, durationMs: number): Promise<void> {
-  const ALIVE = Symbol("alive");
-  const result = await Promise.race([
-    exited.then(() => "exited" as const),
-    new Promise<typeof ALIVE>((resolve) =>
-      setTimeout(() => {
-        resolve(ALIVE);
-      }, durationMs),
-    ),
-  ]);
-  expect(result).toBe(ALIVE);
+interface RunResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
 }
 
-test.use({ cliPath: "test-sandbox" });
+async function runBin(
+  binPath: string,
+  arguments_: string[],
+  environment: Record<string, string> = {},
+): Promise<RunResult> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(binPath, arguments_, {
+      env: { ...process.env, ...environment },
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: false,
+    });
+
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      resolve({ stdout, stderr, exitCode: code ?? 1 });
+    });
+  });
+}
+
+test.use({ cliPath: "." });
 test.describe.configure({ mode: "serial" });
 
-test.describe("source coverage", () => {
-  test.use({
-    cliPath: ".",
-    appEnv: {
-      REGISTRY_URL: "http://localhost:5999",
-      DOMOVOID_UPDATE_INTERVAL_MS: "100",
-      DOMOVOID_NO_RESTART: "1",
-      ...FAST_FAIL_NPM_ENV,
-    },
-  });
-
-  test("covers the autoupdate loop in source CLI", async ({ app }) => {
-    expect(app).toBeDefined();
-    await expectProcessAlive(app.exited, 1000);
-  });
-});
-
-test.describe("source no update available", () => {
-  test.use({
-    cliPath: ".",
-    appEnv: createUpdateEnvironment({ DOMOVOID_NO_RESTART: "1" }),
-  });
-
-  test.beforeAll(async () => {
-    await publishVersions([currentVersion]);
-  });
-
-  test("stays alive when latest version matches current in source CLI", async ({ app }) => {
-    expect(app).toBeDefined();
-    test.setTimeout(10_000);
-    await expectProcessAlive(app.exited, 3000);
-  });
-});
-
-// Runs against a bad registry URL so npm view fails, exercising the transient-error handler.
-test.describe("registry error", () => {
-  test.use({
-    appEnv: {
-      REGISTRY_URL: "http://localhost:5999",
-      DOMOVOID_UPDATE_INTERVAL_MS: "100",
-      DOMOVOID_NO_RESTART: "1",
-      ...FAST_FAIL_NPM_ENV,
-    },
-  });
-
-  test("app stays alive after a transient registry error", async ({ app }) => {
-    expect(app).toBeDefined();
-    await expectProcessAlive(app.exited, 1000);
-  });
-});
-
-// No REGISTRY_URL — exercises the cli branch where autoupdate is skipped.
-// The daemon prints "started" and exits immediately (event loop empty).
-test.describe("no registry", () => {
-  test.use({ appEnv: { DOMOVOID_NO_RESTART: "1" } });
-
-  test("starts and exits cleanly without a registry URL", async ({ app }) => {
-    expect(await app.exited).toBe(0);
-  });
-});
-
-// REGISTRY_URL set but DOMOVOID_UPDATE_INTERVAL_MS unset — exercises the default-interval branch.
-test.describe("daemon with default update interval", () => {
-  test.use({ appEnv: { REGISTRY_URL, DOMOVOID_NO_RESTART: "1" } });
-
-  test.beforeAll(async () => {
-    await publishVersions([currentVersion]);
-  });
-
-  test("starts with the default one-hour interval", async ({ app }) => {
-    expect(app).toBeDefined();
-    await expectProcessAlive(app.exited, 200);
-  });
-});
-
 test.describe("no update available", () => {
-  test.use({ appEnv: createUpdateEnvironment({ DOMOVOID_NO_RESTART: "1" }) });
-
   test.beforeAll(async () => {
     await publishVersions([currentVersion]);
   });
 
-  test("does not install anything", async ({ app }) => {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    const libraryDirectory = path.join(app.prefixDirectory, "lib");
-    expect(
-      await fs
-        .access(libraryDirectory)
-        .then(() => true)
-        .catch(() => false),
-      `Expected ${libraryDirectory} to not exist`,
-    ).toBe(false);
+  test("daemon keeps running when already on latest version", async ({ cli }) => {
+    test.setTimeout(10_000);
+    await withPrefixDirectory(async (prefixDirectory) => {
+      try {
+        await cli(["start"], {
+          ...BASE_UPDATE_ENV,
+          DOMOVOID_NO_RESTART: "1",
+          DOMOVOID_NPM_PREFIX: prefixDirectory,
+        });
+        await expect.poll(() => healthStatus()).toBe(200);
+
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        expect(await healthStatus()).toBe(200);
+
+        const libraryDirectory = nodePath.join(prefixDirectory, "lib");
+        expect(
+          await fs
+            .access(libraryDirectory)
+            .then(() => true)
+            .catch(() => false),
+        ).toBe(false);
+      } finally {
+        await cli(["stop"]);
+        await expect.poll(() => healthStatus()).toBeUndefined();
+      }
+    });
+  });
+});
+
+test.describe("no registry", () => {
+  test("daemon runs without autoupdate when REGISTRY_URL is unset", async ({ cli }) => {
+    test.setTimeout(5000);
+    try {
+      await cli(["start"], { DOMOVOID_NO_RESTART: "1" });
+      await expect.poll(() => healthStatus()).toBe(200);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      expect(await healthStatus()).toBe(200);
+    } finally {
+      await cli(["stop"]);
+      await expect.poll(() => healthStatus()).toBeUndefined();
+    }
   });
 });
 
 test.describe("update available", () => {
-  test.use({ appEnv: createUpdateEnvironment({ DOMOVOID_NO_RESTART: "1" }) });
-
   test.beforeAll(async () => {
     await publishVersions([currentVersion, nextVersion]);
   });
 
-  test("installs the new version under the prefix dir", async ({ app }) => {
+  test("daemon installs the new version under the prefix dir", async ({ cli }) => {
     test.setTimeout(60_000);
-    const moduleDirectory = path.join(
-      app.prefixDirectory,
-      "lib",
-      "node_modules",
-      "@domovoid",
-      "cli",
-    );
-    await expect
-      .poll(
-        async () =>
-          fs
-            .access(moduleDirectory)
-            .then(() => true)
-            .catch(() => false),
-        { timeout: 30_000, message: `Expected ${moduleDirectory} to exist after update` },
-      )
-      .toBe(true);
-  });
-});
+    await withPrefixDirectory(async (prefixDirectory) => {
+      try {
+        await cli(["start"], {
+          ...BASE_UPDATE_ENV,
+          DOMOVOID_NO_RESTART: "1",
+          DOMOVOID_NPM_PREFIX: prefixDirectory,
+        });
+        await expect.poll(() => healthStatus()).toBe(200);
 
-test.describe("update install failure", () => {
-  test.use({
-    appEnv: {
-      ...createUpdateEnvironment(),
-      DOMOVOID_NPM_REGISTRY: "http://localhost:5999",
-      DOMOVOID_NO_RESTART: "1",
-    },
+        const moduleDirectory = nodePath.join(
+          prefixDirectory,
+          "lib",
+          "node_modules",
+          "@domovoid",
+          "cli",
+        );
+        await expect
+          .poll(
+            async () =>
+              fs
+                .access(moduleDirectory)
+                .then(() => true)
+                .catch(() => false),
+            { timeout: 30_000, message: `Expected ${moduleDirectory} to exist after update` },
+          )
+          .toBe(true);
+      } finally {
+        await cli(["stop"]);
+        await expect.poll(() => healthStatus()).toBeUndefined();
+      }
+    });
   });
 
-  test.beforeAll(async () => {
-    await publishVersions([currentVersion, nextVersion]);
-  });
-
-  test("app stays alive after a transient install error", async ({ app }) => {
-    expect(app).toBeDefined();
+  test("installed package reports the new version", async ({ cli }) => {
     test.setTimeout(60_000);
-    await expectProcessAlive(app.exited, 800);
+    await withPrefixDirectory(async (prefixDirectory) => {
+      try {
+        await cli(["start"], {
+          ...BASE_UPDATE_ENV,
+          DOMOVOID_NO_RESTART: "1",
+          DOMOVOID_NPM_PREFIX: prefixDirectory,
+        });
+        await expect.poll(() => healthStatus()).toBe(200);
+
+        const packageJsonPath = nodePath.join(
+          prefixDirectory,
+          "lib",
+          "node_modules",
+          "@domovoid",
+          "cli",
+          "package.json",
+        );
+        await expect
+          .poll(
+            async () => {
+              try {
+                const content = await fs.readFile(packageJsonPath, "utf8");
+                return (JSON.parse(content) as { version: string }).version;
+              } catch {
+                return;
+              }
+            },
+            { timeout: 30_000, message: "Expected installed version to equal nextVersion" },
+          )
+          .toBe(nextVersion);
+      } finally {
+        await cli(["stop"]);
+        await expect.poll(() => healthStatus()).toBeUndefined();
+      }
+    });
   });
 });
 
 test.describe("update triggers restart", () => {
-  test.use({ appEnv: createUpdateEnvironment() });
-
   test.beforeAll(async () => {
     await publishVersions([currentVersion, nextVersion]);
   });
 
-  test("process exits with code 0 after installing update", async ({ app }) => {
+  test("daemon exits with code 0 and update is installed", async ({ cli }) => {
     test.setTimeout(60_000);
-    expect(await app.exited).toBe(0);
+    await withPrefixDirectory(async (prefixDirectory) => {
+      await cli(["start"], { ...BASE_UPDATE_ENV, DOMOVOID_NPM_PREFIX: prefixDirectory });
+      await expect.poll(() => healthStatus()).toBe(200);
+
+      await expect
+        .poll(() => healthStatus(), {
+          timeout: 30_000,
+          message: "Daemon should exit after installing update",
+        })
+        .toBeUndefined();
+
+      const moduleDirectory = nodePath.join(
+        prefixDirectory,
+        "lib",
+        "node_modules",
+        "@domovoid",
+        "cli",
+      );
+      expect(
+        await fs
+          .access(moduleDirectory)
+          .then(() => true)
+          .catch(() => false),
+      ).toBe(true);
+    });
   });
 });
 
-test.describe("source update restart", () => {
-  test.use({ cliPath: ".", appEnv: createUpdateEnvironment() });
-
+test.describe("installed CLI binary", () => {
   test.beforeAll(async () => {
     await publishVersions([currentVersion, nextVersion]);
   });
 
-  test("exits after installing update in source CLI", async ({ app }) => {
+  test("installed CLI binary reports the new version", async ({ cli }) => {
     test.setTimeout(60_000);
-    expect(await app.exited).toBe(0);
+    await withPrefixDirectory(async (prefixDirectory) => {
+      await cli(["start"], { ...BASE_UPDATE_ENV, DOMOVOID_NPM_PREFIX: prefixDirectory });
+      await expect.poll(() => healthStatus()).toBe(200);
+      await expect.poll(() => healthStatus(), { timeout: 30_000 }).toBeUndefined();
+
+      const newBin = nodePath.join(prefixDirectory, "bin", "domovoid");
+      await expect
+        .poll(
+          async () => {
+            try {
+              const result = await runBin(newBin, ["--version"]);
+              return result.stdout.trim();
+            } catch {
+              return;
+            }
+          },
+          { message: "New CLI binary should report nextVersion" },
+        )
+        .toBe(nextVersion);
+    });
+  });
+
+  test("daemon restarted with new binary reports new version in health", async ({ cli }) => {
+    test.setTimeout(60_000);
+    await withPrefixDirectory(async (prefixDirectory) => {
+      await cli(["start"], { ...BASE_UPDATE_ENV, DOMOVOID_NPM_PREFIX: prefixDirectory });
+      await expect.poll(() => healthStatus()).toBe(200);
+      await expect.poll(() => healthStatus(), { timeout: 30_000 }).toBeUndefined();
+
+      const newBin = nodePath.join(prefixDirectory, "bin", "domovoid");
+      await runBin(newBin, ["start"], { ...BASE_UPDATE_ENV, DOMOVOID_NO_RESTART: "1" });
+      try {
+        await expect.poll(() => healthStatus()).toBe(200);
+
+        const response = await fetch(`http://127.0.0.1:${String(PORT)}/health`);
+        const json = (await response.json()) as { status: string; version: string };
+        expect(json.version).toBe(nextVersion);
+      } finally {
+        await runBin(newBin, ["stop"], { ...BASE_UPDATE_ENV });
+        await expect.poll(() => healthStatus()).toBeUndefined();
+      }
+    });
+  });
+});
+
+test.describe("registry error", () => {
+  test("daemon keeps running after a transient registry error", async ({ cli }) => {
+    test.setTimeout(5000);
+    try {
+      await cli(["start"], {
+        REGISTRY_URL: "http://localhost:5999",
+        DOMOVOID_UPDATE_INTERVAL_MS: "100",
+        DOMOVOID_NO_RESTART: "1",
+        ...FAST_FAIL_NPM_ENV,
+      });
+      await expect.poll(() => healthStatus()).toBe(200);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      expect(await healthStatus()).toBe(200);
+    } finally {
+      await cli(["stop"]);
+    }
+  });
+});
+
+test.describe("install error", () => {
+  test.beforeAll(async () => {
+    await publishVersions([currentVersion, nextVersion]);
+  });
+
+  test("daemon keeps running when install fails", async ({ cli }) => {
+    test.setTimeout(10_000);
+    await withPrefixDirectory(async (prefixDirectory) => {
+      try {
+        await cli(["start"], {
+          ...BASE_UPDATE_ENV,
+          DOMOVOID_NPM_REGISTRY: "http://localhost:5999",
+          DOMOVOID_NPM_PREFIX: prefixDirectory,
+          DOMOVOID_NO_RESTART: "1",
+          ...FAST_FAIL_NPM_ENV,
+        });
+        await expect.poll(() => healthStatus()).toBe(200);
+
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        expect(await healthStatus()).toBe(200);
+
+        const moduleDirectory = nodePath.join(
+          prefixDirectory,
+          "lib",
+          "node_modules",
+          "@domovoid",
+          "cli",
+        );
+        expect(
+          await fs
+            .access(moduleDirectory)
+            .then(() => true)
+            .catch(() => false),
+        ).toBe(false);
+      } finally {
+        await cli(["stop"]);
+        await expect.poll(() => healthStatus()).toBeUndefined();
+      }
+    });
   });
 });

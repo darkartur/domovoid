@@ -8,7 +8,7 @@ interface AutoUpdateOptions {
   currentVersion: string;
   registryUrl: string;
   intervalMs?: number;
-  onUpdateInstalled?: () => void;
+  onUpdateInstalled?: (() => void) | undefined;
 }
 
 async function getLatestVersion(registryUrl: string): Promise<string> {
@@ -34,7 +34,7 @@ async function performUpdate(targetVersion: string): Promise<void> {
 export function startAutoUpdateLoop(options: AutoUpdateOptions): NodeJS.Timeout {
   const { currentVersion, registryUrl, intervalMs = 3_600_000, onUpdateInstalled } = options;
   let installing = false;
-  return setInterval(() => {
+  const tick = (): void => {
     if (installing) return;
     void getLatestVersion(registryUrl)
       .then(async (latest) => {
@@ -51,5 +51,7 @@ export function startAutoUpdateLoop(options: AutoUpdateOptions): NodeJS.Timeout 
         // Transient error (registry or install); retry on next interval
         installing = false;
       });
-  }, intervalMs);
+  };
+  tick();
+  return setInterval(tick, intervalMs);
 }
