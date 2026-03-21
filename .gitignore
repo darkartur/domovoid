@@ -12,3 +12,4 @@ playwright-report/
 coverage/
 packed-tarballs/
 packed-test/
+tests/.verdaccio-storage/

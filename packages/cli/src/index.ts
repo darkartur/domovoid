@@ -44,6 +44,11 @@ async function main(): Promise<void> {
       return;
     }
 
+    if (!subcommand && values.help !== true) {
+      await startCommand();
+      return;
+    }
+
     process.stdout.write(
       "Usage: domovoid [options] [command]\n\nCommands:\n  start          Start the daemon\n  stop           Stop the daemon\n\nOptions:\n  -h, --help     Show help\n  -v, --version  Show version\n",
     );

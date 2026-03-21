@@ -5,6 +5,8 @@ const { version } = createRequire(import.meta.url)("../packages/cli/package.json
   version: string;
 };
 
+test.use({ cliPath: "." });
+
 test("--help prints usage and exits 0", async ({ cli }) => {
   const result = await cli(["--help"]);
   expect(result.exitCode).toBe(0);
@@ -47,4 +49,14 @@ test("stop --help prints usage and does not stop daemon", async ({ cli }) => {
   expect(result.exitCode).toBe(0);
   expect(result.stdout).toContain("Usage: domovoid stop");
   expect(result.stdout).not.toContain("Daemon stopped");
+});
+
+test("no-args starts the daemon", async ({ cli }) => {
+  try {
+    const result = await cli([]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Daemon started");
+  } finally {
+    await cli(["stop"]);
+  }
 });

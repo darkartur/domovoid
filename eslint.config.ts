@@ -48,4 +48,11 @@ export default defineConfig(
     files: ["tests/**"],
     extends: [playwright.configs["flat/recommended"]],
   },
+  {
+    files: ["packages/cli/src/index.ts"],
+    rules: {
+      "n/no-process-exit": "off",
+      "unicorn/no-process-exit": "off",
+    },
+  },
 );
