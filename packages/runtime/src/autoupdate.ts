@@ -25,9 +25,7 @@ async function getLatestVersion(registryUrl: string): Promise<string> {
 async function performUpdate(targetVersion: string): Promise<void> {
   const arguments_ = ["install", "-g", `${PACKAGE_NAME}@${targetVersion}`];
   const registry = process.env["DOMOVOID_NPM_REGISTRY"];
-  const prefix = process.env["DOMOVOID_NPM_PREFIX"];
   if (registry) arguments_.push("--registry", registry);
-  if (prefix) arguments_.push("--prefix", prefix);
   await execFileAsync("npm", arguments_);
 }
 
@@ -38,6 +36,7 @@ export function startAutoUpdateLoop(options: AutoUpdateOptions): NodeJS.Timeout 
     if (installing) return;
     void getLatestVersion(registryUrl)
       .then(async (latest) => {
+        if (installing) return;
         if (latest === currentVersion) return;
         installing = true;
         try {

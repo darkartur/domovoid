@@ -55,6 +55,7 @@ function isAlreadyPublishedError(message: string): boolean {
     lowered.includes("previously published") ||
     lowered.includes("cannot publish over") ||
     lowered.includes("already exists") ||
+    lowered.includes("already present") ||
     lowered.includes("epublishconflict")
   );
 }
