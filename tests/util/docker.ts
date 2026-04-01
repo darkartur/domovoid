@@ -94,12 +94,12 @@ export async function startDockerSession(options: {
       });
     },
     async stop(): Promise<void> {
-      await execFileAsync("docker", ["rm", "-f", id]);
       if (hostCoverageDir) {
-        await execFileAsync("chmod", ["-R", "a+r", hostCoverageDir]).catch(
+        await execFileAsync("docker", ["exec", id, "chmod", "-R", "a+r", "/coverage"]).catch(
           (error: unknown) => error,
         );
       }
+      await execFileAsync("docker", ["rm", "-f", id]);
     },
   };
 }
