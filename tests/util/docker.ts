@@ -1,4 +1,5 @@
 import { execFile, spawn } from "node:child_process";
+import { mkdir } from "node:fs/promises";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -13,6 +14,8 @@ export interface DockerExecResult {
 export interface DockerSession {
   /** URL the container uses to reach the host registry (e.g. Verdaccio). */
   readonly containerRegistryUrl: string;
+  /** Path inside the container where V8 coverage JSON files are written, or undefined when coverage is not configured. */
+  readonly containerCoveragePath: string | undefined;
   exec(arguments_: string[], environment?: Record<string, string>): Promise<DockerExecResult>;
   stop(): Promise<void>;
 }
@@ -20,6 +23,8 @@ export interface DockerSession {
 export async function startDockerSession(options: {
   packageVersion: string;
   registryUrl: string;
+  /** Absolute path on the host to mount into the container for V8 coverage output. */
+  hostCoverageDir?: string;
 }): Promise<DockerSession> {
   // On Linux use --network=host so the container shares the host network namespace:
   //   - no iptables/NAT required for port mapping
@@ -31,9 +36,19 @@ export async function startDockerSession(options: {
     ? options.registryUrl
     : options.registryUrl.replace("localhost", "host.docker.internal");
 
+  const { hostCoverageDir } = options;
+  const containerCoveragePath = hostCoverageDir ? "/coverage" : undefined;
+
+  if (hostCoverageDir) {
+    await mkdir(hostCoverageDir, { recursive: true });
+  }
+
   const runArguments = useHostNetwork
     ? ["run", "-d", "--network", "host"]
     : ["run", "-d", "-p", "7777:7777"];
+  if (hostCoverageDir) {
+    runArguments.push("-v", `${hostCoverageDir}:/coverage`);
+  }
   runArguments.push(IMAGE, "sleep", "infinity");
 
   const { stdout: containerOutput } = await execFileAsync("docker", runArguments);
@@ -52,6 +67,7 @@ export async function startDockerSession(options: {
 
   return {
     containerRegistryUrl,
+    containerCoveragePath,
     exec(
       arguments_: string[],
       environment: Record<string, string> = {},

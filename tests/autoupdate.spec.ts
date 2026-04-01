@@ -1,8 +1,5 @@
 import { createRequire } from "node:module";
-import { readFile } from "node:fs/promises";
-import { execFileSync } from "node:child_process";
-import nodePath from "node:path";
-import { test, expect } from "./fixtures/base.ts";
+import { test, expect, COVERAGE_DIR } from "./fixtures/base.ts";
 import { publishRuntimeAndCli } from "./util/verdaccio.ts";
 import { startDockerSession } from "./util/docker.ts";
 import type { DockerSession } from "./util/docker.ts";
@@ -33,6 +30,7 @@ function containerUpdateEnvironment(session: DockerSession): Record<string, stri
     REGISTRY_URL: session.containerRegistryUrl,
     DOMOVOID_UPDATE_INTERVAL_MS: "100",
     DOMOVOID_NPM_REGISTRY: session.containerRegistryUrl,
+    ...(session.containerCoveragePath ? { NODE_V8_COVERAGE: session.containerCoveragePath } : {}),
   };
 }
 
@@ -58,23 +56,12 @@ async function publishVersions(versions: string[], registryUrl = REGISTRY_URL): 
 }
 
 const PACKAGE_JSON_PATH = "/usr/local/lib/node_modules/@domovoid/cli/package.json";
-const LOCAL_GLOBAL_MODULES = execFileSync("npm", ["root", "-g"]).toString().trim();
-const LOCAL_CLI_PACKAGE_JSON = nodePath.join(LOCAL_GLOBAL_MODULES, "@domovoid/cli/package.json");
 
 async function getInstalledVersion(session: DockerSession): Promise<string | undefined> {
   const result = await session.exec(["cat", PACKAGE_JSON_PATH]);
   if (result.exitCode !== 0) return undefined;
   try {
     return (JSON.parse(result.stdout) as { version: string }).version;
-  } catch {
-    return undefined;
-  }
-}
-
-async function getLocalInstalledVersion(): Promise<string | undefined> {
-  try {
-    const content = await readFile(LOCAL_CLI_PACKAGE_JSON, "utf8");
-    return (JSON.parse(content) as { version: string }).version;
   } catch {
     return undefined;
   }
@@ -88,28 +75,12 @@ test.describe("no update available", () => {
     await publishVersions([currentVersion]);
   });
 
-  test("daemon keeps running when already on latest version (local)", async ({ cli }) => {
-    test.setTimeout(10_000);
-    try {
-      await cli(["start"], {
-        REGISTRY_URL,
-        DOMOVOID_UPDATE_INTERVAL_MS: "100",
-        DOMOVOID_NO_RESTART: "1",
-      });
-      await expect.poll(() => healthStatus()).toBe(200);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      expect(await healthStatus()).toBe(200);
-    } finally {
-      await cli(["stop"]);
-      await expect.poll(() => healthStatus()).toBeUndefined();
-    }
-  });
-
   test("daemon keeps running when already on latest version", async () => {
     test.setTimeout(300_000);
     const session = await startDockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
+      hostCoverageDir: COVERAGE_DIR,
     });
     try {
       await session.exec(["domovoid", "start"], {
@@ -151,28 +122,12 @@ test.describe("update available", () => {
     await publishVersions([currentVersion, nextVersion]);
   });
 
-  test("daemon installs the new version globally (local)", async ({ cli }) => {
-    test.setTimeout(120_000);
-    try {
-      await cli(["start"], {
-        REGISTRY_URL,
-        DOMOVOID_UPDATE_INTERVAL_MS: "100",
-        DOMOVOID_NPM_REGISTRY: REGISTRY_URL,
-        DOMOVOID_NO_RESTART: "1",
-      });
-      await expect.poll(() => healthStatus()).toBe(200);
-      await expect.poll(getLocalInstalledVersion, { timeout: 60_000 }).toBe(nextVersion);
-    } finally {
-      await cli(["stop"]);
-      await expect.poll(() => healthStatus()).toBeUndefined();
-    }
-  });
-
   test("daemon installs the new version globally", async () => {
     test.setTimeout(300_000);
     const session = await startDockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
+      hostCoverageDir: COVERAGE_DIR,
     });
     try {
       await session.exec(["domovoid", "start"], {
@@ -199,6 +154,7 @@ test.describe("update available", () => {
     const session = await startDockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
+      hostCoverageDir: COVERAGE_DIR,
     });
     try {
       await session.exec(["domovoid", "start"], {
@@ -226,22 +182,12 @@ test.describe("update triggers restart", () => {
     await publishVersions([currentVersion, nextVersion]);
   });
 
-  test("daemon exits with code 0 after update (local)", async ({ cli }) => {
-    test.setTimeout(120_000);
-    await cli(["start"], {
-      REGISTRY_URL,
-      DOMOVOID_UPDATE_INTERVAL_MS: "100",
-      DOMOVOID_NPM_REGISTRY: REGISTRY_URL,
-    });
-    await expect.poll(() => healthStatus()).toBe(200);
-    await expect.poll(() => healthStatus(), { timeout: 60_000 }).toBeUndefined();
-  });
-
   test("daemon exits with code 0 and update is installed", async () => {
     test.setTimeout(300_000);
     const session = await startDockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
+      hostCoverageDir: COVERAGE_DIR,
     });
     try {
       await session.exec(["domovoid", "start"], { ...containerUpdateEnvironment(session) });
@@ -271,6 +217,7 @@ test.describe("installed CLI binary", () => {
     const session = await startDockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
+      hostCoverageDir: COVERAGE_DIR,
     });
     try {
       await session.exec(["domovoid", "start"], { ...containerUpdateEnvironment(session) });
@@ -297,6 +244,7 @@ test.describe("installed CLI binary", () => {
     const session = await startDockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
+      hostCoverageDir: COVERAGE_DIR,
     });
     try {
       await session.exec(["domovoid", "start"], { ...containerUpdateEnvironment(session) });
@@ -353,6 +301,7 @@ test.describe("install error", () => {
     const session = await startDockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
+      hostCoverageDir: COVERAGE_DIR,
     });
     try {
       await session.exec(["domovoid", "start"], {

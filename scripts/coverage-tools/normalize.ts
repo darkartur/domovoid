@@ -13,6 +13,8 @@ interface V8CoverageFile {
 
 const COVERAGE_TEMP_DIR = nodePath.resolve("tests/coverage/tmp");
 const SANDBOX_SCOPE_ROOT = nodePath.resolve("test-sandbox/node_modules/@domovoid");
+const DOCKER_SCOPE_ROOT = "/usr/local/lib/node_modules/@domovoid";
+const DOCKER_NESTED_SCOPE_ROOT = "/usr/local/lib/node_modules/@domovoid/cli/node_modules/@domovoid";
 const PACKAGES_ROOT = nodePath.resolve("packages");
 
 function rewritePath(filePath: string): string | undefined {
@@ -20,12 +22,14 @@ function rewritePath(filePath: string): string | undefined {
     ? nodePath.normalize(filePath)
     : nodePath.resolve(filePath);
 
-  if (!absolutePath.startsWith(`${SANDBOX_SCOPE_ROOT}${nodePath.sep}`)) {
-    return undefined;
+  for (const scopeRoot of [SANDBOX_SCOPE_ROOT, DOCKER_NESTED_SCOPE_ROOT, DOCKER_SCOPE_ROOT]) {
+    if (absolutePath.startsWith(`${scopeRoot}${nodePath.sep}`)) {
+      const relativePath = nodePath.relative(scopeRoot, absolutePath);
+      return nodePath.join(PACKAGES_ROOT, relativePath);
+    }
   }
 
-  const relativePath = nodePath.relative(SANDBOX_SCOPE_ROOT, absolutePath);
-  return nodePath.join(PACKAGES_ROOT, relativePath);
+  return undefined;
 }
 
 function rewriteUrl(url: string): string {

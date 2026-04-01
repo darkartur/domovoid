@@ -8,7 +8,7 @@ interface CliResult {
   exitCode: number;
 }
 
-const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
+export const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
 
 export const test = base.extend<{
   cli: (arguments_: string[], environment?: Record<string, string>) => Promise<CliResult>;
