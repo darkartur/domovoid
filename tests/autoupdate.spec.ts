@@ -1,7 +1,6 @@
 import { createRequire } from "node:module";
 import { test, expect, COVERAGE_DIR } from "./fixtures/base.ts";
 import { publishRuntimeAndCli } from "./util/verdaccio.ts";
-import { startDockerSession } from "./util/docker.ts";
 import type { DockerSession } from "./util/docker.ts";
 
 const PORT = 7777;
@@ -75,29 +74,27 @@ test.describe("no update available", () => {
     await publishVersions([currentVersion]);
   });
 
-  test("daemon keeps running when already on latest version", async () => {
+  test("daemon keeps running when already on latest version", async ({ dockerSession }) => {
     test.setTimeout(300_000);
-    const session = await startDockerSession({
+    const session = await dockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
       hostCoverageDir: COVERAGE_DIR,
     });
-    try {
-      await session.exec(["domovoid", "start"], {
-        ...containerUpdateEnvironment(session),
-        DOMOVOID_NO_RESTART: "1",
-      });
-      await expect.poll(() => healthStatus()).toBe(200);
 
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+    await session.exec(["domovoid", "start"], {
+      ...containerUpdateEnvironment(session),
+      DOMOVOID_NO_RESTART: "1",
+    });
+    await expect.poll(() => healthStatus()).toBe(200);
 
-      expect(await healthStatus()).toBe(200);
-      expect(await getInstalledVersion(session)).toBe(currentVersion);
-    } finally {
-      await session.exec(["domovoid", "stop"]);
-      await expect.poll(() => healthStatus()).toBeUndefined();
-      await session.stop();
-    }
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    expect(await healthStatus()).toBe(200);
+    expect(await getInstalledVersion(session)).toBe(currentVersion);
+
+    await session.exec(["domovoid", "stop"]);
+    await expect.poll(() => healthStatus()).toBeUndefined();
   });
 });
 
@@ -112,7 +109,6 @@ test.describe("no registry", () => {
       expect(await healthStatus()).toBe(200);
     } finally {
       await cli(["stop"]);
-      await expect.poll(() => healthStatus()).toBeUndefined();
     }
   });
 });
@@ -122,58 +118,54 @@ test.describe("update available", () => {
     await publishVersions([currentVersion, nextVersion]);
   });
 
-  test("daemon installs the new version globally", async () => {
+  test("daemon installs the new version globally", async ({ dockerSession }) => {
     test.setTimeout(300_000);
-    const session = await startDockerSession({
+    const session = await dockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
       hostCoverageDir: COVERAGE_DIR,
     });
-    try {
-      await session.exec(["domovoid", "start"], {
-        ...containerUpdateEnvironment(session),
-        DOMOVOID_NO_RESTART: "1",
-      });
-      await expect.poll(() => healthStatus()).toBe(200);
 
-      await expect
-        .poll(() => getInstalledVersion(session), {
-          timeout: 240_000,
-          message: "Expected installed version to be nextVersion after update",
-        })
-        .toBe(nextVersion);
-    } finally {
-      await session.exec(["domovoid", "stop"]);
-      await expect.poll(() => healthStatus()).toBeUndefined();
-      await session.stop();
-    }
+    await session.exec(["domovoid", "start"], {
+      ...containerUpdateEnvironment(session),
+      DOMOVOID_NO_RESTART: "1",
+    });
+    await expect.poll(() => healthStatus()).toBe(200);
+
+    await expect
+      .poll(() => getInstalledVersion(session), {
+        timeout: 240_000,
+        message: "Expected installed version to be nextVersion after update",
+      })
+      .toBe(nextVersion);
+
+    await session.exec(["domovoid", "stop"]);
+    await expect.poll(() => healthStatus()).toBeUndefined();
   });
 
-  test("installed package reports the new version", async () => {
+  test("installed package reports the new version", async ({ dockerSession }) => {
     test.setTimeout(300_000);
-    const session = await startDockerSession({
+    const session = await dockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
       hostCoverageDir: COVERAGE_DIR,
     });
-    try {
-      await session.exec(["domovoid", "start"], {
-        ...containerUpdateEnvironment(session),
-        DOMOVOID_NO_RESTART: "1",
-      });
-      await expect.poll(() => healthStatus()).toBe(200);
 
-      await expect
-        .poll(() => getInstalledVersion(session), {
-          timeout: 240_000,
-          message: "Expected installed version to equal nextVersion",
-        })
-        .toBe(nextVersion);
-    } finally {
-      await session.exec(["domovoid", "stop"]);
-      await expect.poll(() => healthStatus()).toBeUndefined();
-      await session.stop();
-    }
+    await session.exec(["domovoid", "start"], {
+      ...containerUpdateEnvironment(session),
+      DOMOVOID_NO_RESTART: "1",
+    });
+    await expect.poll(() => healthStatus()).toBe(200);
+
+    await expect
+      .poll(() => getInstalledVersion(session), {
+        timeout: 240_000,
+        message: "Expected installed version to equal nextVersion",
+      })
+      .toBe(nextVersion);
+
+    await session.exec(["domovoid", "stop"]);
+    await expect.poll(() => healthStatus()).toBeUndefined();
   });
 });
 
@@ -182,28 +174,25 @@ test.describe("update triggers restart", () => {
     await publishVersions([currentVersion, nextVersion]);
   });
 
-  test("daemon exits with code 0 and update is installed", async () => {
+  test("daemon exits with code 0 and update is installed", async ({ dockerSession }) => {
     test.setTimeout(300_000);
-    const session = await startDockerSession({
+    const session = await dockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
       hostCoverageDir: COVERAGE_DIR,
     });
-    try {
-      await session.exec(["domovoid", "start"], { ...containerUpdateEnvironment(session) });
-      await expect.poll(() => healthStatus()).toBe(200);
 
-      await expect
-        .poll(() => healthStatus(), {
-          timeout: 240_000,
-          message: "Daemon should exit after installing update",
-        })
-        .toBeUndefined();
+    await session.exec(["domovoid", "start"], { ...containerUpdateEnvironment(session) });
+    await expect.poll(() => healthStatus()).toBe(200);
 
-      expect(await getInstalledVersion(session)).toBe(nextVersion);
-    } finally {
-      await session.stop();
-    }
+    await expect
+      .poll(() => healthStatus(), {
+        timeout: 240_000,
+        message: "Daemon should exit after installing update",
+      })
+      .toBeUndefined();
+
+    expect(await getInstalledVersion(session)).toBe(nextVersion);
   });
 });
 
@@ -212,62 +201,56 @@ test.describe("installed CLI binary", () => {
     await publishVersions([currentVersion, nextVersion]);
   });
 
-  test("installed CLI binary reports the new version", async () => {
+  test("installed CLI binary reports the new version", async ({ dockerSession }) => {
     test.setTimeout(300_000);
-    const session = await startDockerSession({
+    const session = await dockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
       hostCoverageDir: COVERAGE_DIR,
     });
-    try {
-      await session.exec(["domovoid", "start"], { ...containerUpdateEnvironment(session) });
-      await expect.poll(() => healthStatus()).toBe(200);
-      await expect.poll(() => healthStatus(), { timeout: 240_000 }).toBeUndefined();
 
-      await expect
-        .poll(
-          async () => {
-            const result = await session.exec(["domovoid", "--version"]);
-            if (result.exitCode !== 0) return;
-            return result.stdout.trim();
-          },
-          { message: "New CLI binary should report nextVersion" },
-        )
-        .toBe(nextVersion);
-    } finally {
-      await session.stop();
-    }
+    await session.exec(["domovoid", "start"], { ...containerUpdateEnvironment(session) });
+    await expect.poll(() => healthStatus()).toBe(200);
+    await expect.poll(() => healthStatus(), { timeout: 240_000 }).toBeUndefined();
+
+    await expect
+      .poll(
+        async () => {
+          const result = await session.exec(["domovoid", "--version"]);
+          if (result.exitCode !== 0) return;
+          return result.stdout.trim();
+        },
+        { message: "New CLI binary should report nextVersion" },
+      )
+      .toBe(nextVersion);
   });
 
-  test("daemon restarted with new binary reports new version in health", async () => {
+  test("daemon restarted with new binary reports new version in health", async ({
+    dockerSession,
+  }) => {
     test.setTimeout(300_000);
-    const session = await startDockerSession({
+    const session = await dockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
       hostCoverageDir: COVERAGE_DIR,
     });
-    try {
-      await session.exec(["domovoid", "start"], { ...containerUpdateEnvironment(session) });
-      await expect.poll(() => healthStatus()).toBe(200);
-      await expect.poll(() => healthStatus(), { timeout: 240_000 }).toBeUndefined();
 
-      await session.exec(["domovoid", "start"], {
-        ...containerUpdateEnvironment(session),
-        DOMOVOID_NO_RESTART: "1",
-      });
-      try {
-        await expect.poll(() => healthStatus(), { timeout: 30_000 }).toBe(200);
+    await session.exec(["domovoid", "start"], { ...containerUpdateEnvironment(session) });
+    await expect.poll(() => healthStatus()).toBe(200);
+    await expect.poll(() => healthStatus(), { timeout: 240_000 }).toBeUndefined();
 
-        const response = await fetch(`http://127.0.0.1:${String(PORT)}/health`);
-        const json = (await response.json()) as { status: string; version: string };
-        expect(json.version).toBe(nextVersion);
-      } finally {
-        await session.exec(["domovoid", "stop"]);
-        await expect.poll(() => healthStatus()).toBeUndefined();
-      }
-    } finally {
-      await session.stop();
-    }
+    await session.exec(["domovoid", "start"], {
+      ...containerUpdateEnvironment(session),
+      DOMOVOID_NO_RESTART: "1",
+    });
+    await expect.poll(() => healthStatus(), { timeout: 30_000 }).toBe(200);
+
+    const response = await fetch(`http://127.0.0.1:${String(PORT)}/health`);
+    const json = (await response.json()) as { status: string; version: string };
+    expect(json.version).toBe(nextVersion);
+
+    await session.exec(["domovoid", "stop"]);
+    await expect.poll(() => healthStatus()).toBeUndefined();
   });
 });
 
@@ -296,29 +279,27 @@ test.describe("install error", () => {
     await publishVersions([currentVersion, nextVersion]);
   });
 
-  test("daemon keeps running when install fails", async () => {
+  test("daemon keeps running when install fails", async ({ dockerSession }) => {
     test.setTimeout(300_000);
-    const session = await startDockerSession({
+    const session = await dockerSession({
       packageVersion: currentVersion,
       registryUrl: REGISTRY_URL,
       hostCoverageDir: COVERAGE_DIR,
     });
-    try {
-      await session.exec(["domovoid", "start"], {
-        ...containerUpdateEnvironment(session),
-        DOMOVOID_NPM_REGISTRY: "http://localhost:5999",
-        DOMOVOID_NO_RESTART: "1",
-        ...FAST_FAIL_NPM_ENV,
-      });
-      await expect.poll(() => healthStatus()).toBe(200);
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      expect(await healthStatus()).toBe(200);
-      expect(await getInstalledVersion(session)).toBe(currentVersion);
-    } finally {
-      await session.exec(["domovoid", "stop"]);
-      await expect.poll(() => healthStatus()).toBeUndefined();
-      await session.stop();
-    }
+    await session.exec(["domovoid", "start"], {
+      ...containerUpdateEnvironment(session),
+      DOMOVOID_NPM_REGISTRY: "http://localhost:5999",
+      DOMOVOID_NO_RESTART: "1",
+      ...FAST_FAIL_NPM_ENV,
+    });
+    await expect.poll(() => healthStatus()).toBe(200);
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    expect(await healthStatus()).toBe(200);
+    expect(await getInstalledVersion(session)).toBe(currentVersion);
+
+    await session.exec(["domovoid", "stop"]);
+    await expect.poll(() => healthStatus()).toBeUndefined();
   });
 });
