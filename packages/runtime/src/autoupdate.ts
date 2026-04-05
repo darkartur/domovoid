@@ -6,35 +6,25 @@ const PACKAGE_NAME = "@domovoid/cli";
 
 interface AutoUpdateOptions {
   currentVersion: string;
-  registryUrl: string;
   intervalMs?: number;
   onUpdateInstalled?: (() => void) | undefined;
 }
 
-async function getLatestVersion(registryUrl: string): Promise<string> {
-  const { stdout } = await execFileAsync("npm", [
-    "view",
-    PACKAGE_NAME,
-    "version",
-    "--registry",
-    registryUrl,
-  ]);
+async function getLatestVersion(): Promise<string> {
+  const { stdout } = await execFileAsync("npm", ["view", PACKAGE_NAME, "version"]);
   return stdout.trim();
 }
 
 async function performUpdate(targetVersion: string): Promise<void> {
-  const arguments_ = ["install", "-g", `${PACKAGE_NAME}@${targetVersion}`];
-  const registry = process.env["DOMOVOID_NPM_REGISTRY"];
-  if (registry) arguments_.push("--registry", registry);
-  await execFileAsync("npm", arguments_);
+  await execFileAsync("npm", ["install", "-g", `${PACKAGE_NAME}@${targetVersion}`]);
 }
 
 export function startAutoUpdateLoop(options: AutoUpdateOptions): NodeJS.Timeout {
-  const { currentVersion, registryUrl, intervalMs = 3_600_000, onUpdateInstalled } = options;
+  const { currentVersion, intervalMs = 3_600_000, onUpdateInstalled } = options;
   let installing = false;
   const tick = (): void => {
     if (installing) return;
-    void getLatestVersion(registryUrl)
+    void getLatestVersion()
       .then(async (latest) => {
         if (installing) return;
         if (latest === currentVersion) return;

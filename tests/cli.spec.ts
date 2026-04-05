@@ -4,8 +4,6 @@ import info from "../packages/cli/package.json" with { type: "json" };
 
 const version = info.version;
 
-test.use({ cliPath: "." });
-
 test("--help prints usage and exits 0", async ({ cli }) => {
   const result = await cli(["--help"]);
   expect(result.exitCode).toBe(0);

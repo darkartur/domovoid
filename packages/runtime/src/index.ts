@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { createServer } from "node:http";
 import type { Server } from "node:http";
+import { spawn } from "node:child_process";
 import v8 from "node:v8";
 import { startAutoUpdateLoop } from "./autoupdate.ts";
 
@@ -19,7 +20,6 @@ const server = await new Promise<Server>((resolve, reject) => {
   });
 });
 
-const shouldRestart = process.env["DOMOVOID_NO_RESTART"] !== "1";
 const shouldFlushCoverage = Boolean(process.env["NODE_V8_COVERAGE"]);
 const flushCoverage = (): void => {
   if (shouldFlushCoverage) {
@@ -27,32 +27,38 @@ const flushCoverage = (): void => {
   }
 };
 
-const registryUrl = process.env["REGISTRY_URL"];
+const autoupdateEnabled = process.env["DOMOVOID_AUTOUPDATE"] === "1";
 const intervalMs = Number(process.env["DOMOVOID_UPDATE_INTERVAL_MS"]) || 3_600_000;
-const restart = shouldRestart
-  ? () => {
-      flushCoverage();
-      server.closeAllConnections();
-      server.close();
-      // eslint-disable-next-line n/no-process-exit, unicorn/no-process-exit -- intentional restart signal
-      process.exit(0);
-    }
-  : undefined;
 
-const timer = registryUrl
-  ? startAutoUpdateLoop({
-      currentVersion: version,
-      registryUrl,
-      intervalMs,
-      onUpdateInstalled: restart,
-    })
-  : undefined;
+let timer: NodeJS.Timeout | undefined;
 
-process.on("SIGTERM", () => {
-  flushCoverage();
+const shutdown = (): void => {
   if (timer) {
     clearInterval(timer);
+    timer = undefined;
   }
   server.closeAllConnections();
   server.close();
+};
+
+if (autoupdateEnabled) {
+  timer = startAutoUpdateLoop({
+    currentVersion: version,
+    intervalMs,
+    onUpdateInstalled: () => {
+      flushCoverage();
+      shutdown();
+      const child = spawn("domovoid", ["start"], {
+        detached: true,
+        stdio: "ignore",
+        env: process.env,
+      });
+      child.unref();
+    },
+  });
+}
+
+process.on("SIGTERM", () => {
+  flushCoverage();
+  shutdown();
 });

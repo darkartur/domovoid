@@ -77,7 +77,7 @@ async function ensureDistribution(sourcePath: string): Promise<void> {
   await runCommand("pnpm", ["-C", sourcePath, "run", "prepublishOnly"]);
 }
 
-export async function publishPackage(options: PublishOptions): Promise<void> {
+async function publishPackage(options: PublishOptions): Promise<void> {
   const { sourcePath, versionOverride, dependencyOverrides, registryUrl } = options;
   await ensureDistribution(sourcePath);
   const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "domovoid-pack-"));
@@ -123,6 +123,8 @@ export async function publishPackage(options: PublishOptions): Promise<void> {
   }
 }
 
+const STORAGE_DIR = ".verdaccio";
+
 export async function publishRuntimeAndCli(version: string, registryUrl: string): Promise<void> {
   await publishPackage({ sourcePath: "packages/runtime", versionOverride: version, registryUrl });
   await publishPackage({
@@ -131,4 +133,8 @@ export async function publishRuntimeAndCli(version: string, registryUrl: string)
     dependencyOverrides: { "@domovoid/runtime": version },
     registryUrl,
   });
+}
+
+export async function resetNpmPackages(): Promise<void> {
+  await fs.rm(STORAGE_DIR, { recursive: true, force: true });
 }

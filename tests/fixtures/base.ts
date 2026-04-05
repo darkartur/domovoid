@@ -1,8 +1,10 @@
 import { test as base } from "@playwright/test";
-import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 import nodePath from "node:path";
 import { startDockerSession } from "../util/docker.ts";
 import type { DockerSession } from "../util/docker.ts";
+import { publishRuntimeAndCli, resetNpmPackages } from "../util/npm-registry.ts";
+import { healthJson } from "../util/health.ts";
 
 interface CliResult {
   stdout: string;
@@ -10,58 +12,61 @@ interface CliResult {
   exitCode: number;
 }
 
-export const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
+type CliFunction = (
+  arguments_: string[],
+  environment?: Record<string, string>,
+) => Promise<CliResult>;
+
+const COVERAGE_DIR = nodePath.join(import.meta.dirname, "../coverage/tmp");
+const VERDACCIO_HOST_URL = "http://localhost:4873";
+
+const require = createRequire(import.meta.url);
+const { version: currentVersion } = require("../../packages/cli/package.json") as {
+  version: string;
+};
 
 export const test = base.extend<{
-  cli: (arguments_: string[], environment?: Record<string, string>) => Promise<CliResult>;
-  cliPath: string;
-  dockerSession: (options: {
-    packageVersion: string;
-    registryUrl: string;
-    hostCoverageDir?: string;
-  }) => Promise<DockerSession>;
+  cli: CliFunction;
+  publishVersion: (version: string) => Promise<void>;
+  dockerSession: DockerSession;
 }>({
-  cliPath: [process.env["CLI_PATH"] ?? "", { option: true }],
-  cli: async ({ cliPath }, use) => {
-    await use(
-      (arguments_, environment = {}) =>
-        new Promise((resolve, reject) => {
-          const resolvedCliPath = cliPath
-            ? nodePath.resolve(cliPath, "node_modules/.bin/domovoid")
-            : "domovoid";
-          const child = spawn(resolvedCliPath, [...arguments_], {
-            cwd: cliPath || undefined,
-            env: {
-              ...process.env,
-              NODE_V8_COVERAGE: COVERAGE_DIR,
-              ...environment,
-            },
-            shell: false,
-          });
-          let stdout = "";
-          let stderr = "";
-          child.stdout.on("data", (chunk: Buffer) => {
-            stdout += chunk.toString();
-          });
-          child.stderr.on("data", (chunk: Buffer) => {
-            stderr += chunk.toString();
-          });
-          child.on("close", (code) => {
-            resolve({ stdout, stderr, exitCode: code ?? 1 });
-          });
-          child.on("error", reject);
-        }),
-    );
-  },
-  dockerSession: async ({}, use) => {
-    const sessions: DockerSession[] = [];
-    await use(async (options) => {
-      const session = await startDockerSession(options);
-      sessions.push(session);
-      return session;
+  cli: async ({}, use) => {
+    const session = await startDockerSession({
+      packageVersion: currentVersion,
+      hostCoverageDir: COVERAGE_DIR,
     });
-    for (const session of sessions) {
-      await session.stop();
+    const invoke: CliFunction = (arguments_, environment = {}) =>
+      session.exec(["domovoid", ...arguments_], {
+        ...(session.containerCoveragePath
+          ? { NODE_V8_COVERAGE: session.containerCoveragePath }
+          : {}),
+        ...environment,
+      });
+
+    await use(invoke);
+
+    // Teardown: auto-stop daemon if running, then wait for port to be released
+    if ((await healthJson()) !== undefined) {
+      await invoke(["stop"]);
+    }
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+      if ((await healthJson()) === undefined) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    await session.stop();
+  },
+
+  publishVersion: async ({}, use) => {
+    const published: string[] = [];
+    await use(async (version: string) => {
+      await publishRuntimeAndCli(version, VERDACCIO_HOST_URL);
+      published.push(version);
+    });
+    if (published.some((v) => v !== currentVersion)) {
+      await resetNpmPackages();
+      await publishRuntimeAndCli(currentVersion, VERDACCIO_HOST_URL);
     }
   },
 });

@@ -12,17 +12,16 @@ export interface DockerExecResult {
 }
 
 export interface DockerSession {
-  /** URL the container uses to reach the host registry (e.g. Verdaccio). */
-  readonly containerRegistryUrl: string;
   /** Path inside the container where V8 coverage JSON files are written, or undefined when coverage is not configured. */
   readonly containerCoveragePath: string | undefined;
   exec(arguments_: string[], environment?: Record<string, string>): Promise<DockerExecResult>;
   stop(): Promise<void>;
 }
 
+const VERDACCIO_HOST_URL = "http://localhost:4873";
+
 export async function startDockerSession(options: {
   packageVersion: string;
-  registryUrl: string;
   /** Absolute path on the host to mount into the container for V8 coverage output. */
   hostCoverageDir?: string;
 }): Promise<DockerSession> {
@@ -33,8 +32,8 @@ export async function startDockerSession(options: {
   // use port publishing (-p) and host.docker.internal for host-to-container comms.
   const useHostNetwork = process.platform !== "darwin";
   const containerRegistryUrl = useHostNetwork
-    ? options.registryUrl
-    : options.registryUrl.replace("localhost", "host.docker.internal");
+    ? VERDACCIO_HOST_URL
+    : VERDACCIO_HOST_URL.replace("localhost", "host.docker.internal");
 
   const { hostCoverageDir } = options;
   const containerCoveragePath = hostCoverageDir ? "/coverage" : undefined;
@@ -54,6 +53,7 @@ export async function startDockerSession(options: {
   const { stdout: containerOutput } = await execFileAsync("docker", runArguments);
   const id = containerOutput.trim();
 
+  // Install the CLI package and configure npm to use the Verdaccio registry
   await execFileAsync("docker", [
     "exec",
     id,
@@ -64,9 +64,17 @@ export async function startDockerSession(options: {
     "--registry",
     containerRegistryUrl,
   ]);
+  await execFileAsync("docker", [
+    "exec",
+    id,
+    "npm",
+    "config",
+    "set",
+    "registry",
+    containerRegistryUrl,
+  ]);
 
   return {
-    containerRegistryUrl,
     containerCoveragePath,
     exec(
       arguments_: string[],
@@ -95,7 +103,7 @@ export async function startDockerSession(options: {
     },
     async stop(): Promise<void> {
       if (hostCoverageDir) {
-        await execFileAsync("docker", ["exec", id, "chmod", "-R", "a+r", "/coverage"]).catch(
+        await execFileAsync("docker", ["exec", id, "chmod", "-R", "a+rw", "/coverage"]).catch(
           (error: unknown) => error,
         );
       }
