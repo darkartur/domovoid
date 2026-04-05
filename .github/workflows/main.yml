@@ -30,6 +30,9 @@ jobs:
 
       - run: pnpm exec playwright test
 
+      - name: Fix coverage file permissions
+        run: sudo chmod -R a+rw tests/coverage/tmp 2>/dev/null || true
+
       - name: Normalize coverage paths
         run: pnpm run coverage:normalize
 

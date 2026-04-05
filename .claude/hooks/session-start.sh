@@ -9,7 +9,7 @@ fi
 cd "$CLAUDE_PROJECT_DIR"
 
 # Install npm workspace dependencies
-npm install
+pnpm install
 
 # Install GitHub CLI if not already present
 if ! command -v gh &>/dev/null; then
