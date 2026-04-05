@@ -1,9 +1,8 @@
-import { createRequire } from "node:module";
 import { test, expect } from "./fixtures/base.ts";
 
-const { version } = createRequire(import.meta.url)("../packages/cli/package.json") as {
-  version: string;
-};
+import info from "../packages/cli/package.json" with { type: "json" };
+
+const version = info.version;
 
 test.use({ cliPath: "." });
 
